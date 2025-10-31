@@ -7,6 +7,7 @@ import {
   RegistrationFormData,
   RegistrationRequest,
 } from "../types";
+import PublicNavbar from "./PublicNavbar";
 
 interface RegistrationFormProps {
   onSuccess?: () => void;
@@ -157,12 +158,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">ระบบลงทะเบียน</h1>
-          <p className="text-white text-sm">สำหรับประชาชนทั่วไป</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+      <PublicNavbar currentPage="registration" />
+      
+      <div className="py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">ระบบลงทะเบียน</h1>
+            <p className="text-gray-600 text-sm">สำหรับประชาชนทั่วไป</p>
+          </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">

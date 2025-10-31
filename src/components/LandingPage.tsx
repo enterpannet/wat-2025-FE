@@ -1,18 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import PublicNavbar from "./PublicNavbar";
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-800">
-            ระบบจัดการข้อมูลวัด
-          </h1>
-        </div>
-      </header>
+      <PublicNavbar currentPage="home" />
 
       {/* Main Content */}
       <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-4 py-12">

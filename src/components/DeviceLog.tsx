@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import axios, { AxiosError } from "axios";
 import { DeviceLogRequest } from "../types";
+import PublicNavbar from "./PublicNavbar";
 
 interface ErrorResponse {
   error: string;
@@ -84,16 +85,19 @@ const DeviceLog: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            บันทึกข้อมูลอุปกรณ์
-          </h1>
-          <p className="text-white text-sm">
-            ระบบนี้เป็นไปตามมาตรฐาน PDPA โดยไม่เก็บข้อมูลส่วนบุคคลที่ระบุตัวตน
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+      <PublicNavbar currentPage="contact" />
+      
+      <div className="py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              บันทึกข้อมูลอุปกรณ์
+            </h1>
+            <p className="text-gray-600 text-sm">
+              ระบบนี้เป็นไปตามมาตรฐาน PDPA โดยไม่เก็บข้อมูลส่วนบุคคลที่ระบุตัวตน
+            </p>
+          </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
