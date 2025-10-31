@@ -36,7 +36,7 @@ jobs:
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         port: ${{ secrets.PORT || 22 }}
-        source: "dist/**/*"
+        source: "dist/**"
         target: "/tmp/frontend-deploy"
 
     - name: Deploy to production
@@ -53,9 +53,18 @@ jobs:
               /var/www/registration-system/frontend/dist.backup.$(date +%Y%m%d_%H%M%S)
           fi
           
-          # Deploy new files
+          # Deploy new files - move contents from dist subdirectory
           sudo mkdir -p /var/www/registration-system/frontend/dist
-          sudo cp -r /tmp/frontend-deploy/* /var/www/registration-system/frontend/dist/
+          sudo rm -rf /var/www/registration-system/frontend/dist/*
+          
+          # Check if files are in /tmp/frontend-deploy/dist/ or directly in /tmp/frontend-deploy/
+          if [ -d "/tmp/frontend-deploy/dist" ]; then
+            # Files are in nested dist directory, move contents up
+            sudo cp -r /tmp/frontend-deploy/dist/* /var/www/registration-system/frontend/dist/
+          else
+            # Files are directly in deploy directory
+            sudo cp -r /tmp/frontend-deploy/* /var/www/registration-system/frontend/dist/
+          fi
           
           # Set permissions
           sudo chown -R www-data:www-data /var/www/registration-system/frontend/dist
