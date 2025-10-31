@@ -1,10 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 
-interface PublicNavbarProps {
-  currentPage?: "home" | "registration" | "contact";
-}
-
-const PublicNavbar: React.FC<PublicNavbarProps> = ({ currentPage = "home" }) => {
+const PublicNavbar: React.FC = () => {
   const navigate = useNavigate();
 
   return (

@@ -159,7 +159,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      <PublicNavbar currentPage="registration" />
+      <PublicNavbar />
       
       <div className="py-8 px-4">
         <div className="max-w-4xl mx-auto">
