@@ -57,14 +57,14 @@ const ListTum: React.FC = () => {
     }
   };
 
-  const handleLogout = async (): Promise<void> => {
-    try {
-      await axios.post("/api/auth/logout", {}, { withCredentials: true });
-      navigate("/admin/login");
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  };
+  // const handleLogout = async (): Promise<void> => {
+  //   try {
+  //     await axios.post("/api/auth/logout", {}, { withCredentials: true });
+  //     navigate("/admin/login");
+  //   } catch (err) {
+  //     console.error("Logout error:", err);
+  //   }
+  // };
 
   const updateChantingStatus = async (
     id: number,

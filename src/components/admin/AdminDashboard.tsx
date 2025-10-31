@@ -57,14 +57,14 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = async (): Promise<void> => {
-    try {
-      await axios.post("/api/auth/logout", {}, { withCredentials: true });
-      navigate("/admin/login");
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  };
+  // const handleLogout = async (): Promise<void> => {
+  //   try {
+  //     await axios.post("/api/auth/logout", {}, { withCredentials: true });
+  //     navigate("/admin/login");
+  //   } catch (err) {
+  //     console.error("Logout error:", err);
+  //   }
+  // };
 
   const handleDelete = async (id: number): Promise<void> => {
     if (!confirm("คุณแน่ใจหรือไม่ที่จะลบข้อมูลนี้?")) {

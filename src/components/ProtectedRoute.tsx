@@ -22,7 +22,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await axios.get<User>("/api/admin/me", {
+      await axios.get<User>("/api/admin/me", {
         withCredentials: true,
       });
       setIsAuthenticated(true);
