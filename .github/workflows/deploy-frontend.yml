@@ -38,6 +38,7 @@ jobs:
         port: ${{ secrets.PORT || 22 }}
         source: "dist/**"
         target: "/tmp/frontend-deploy"
+        timeout: 300s
 
     - name: Deploy to production
       uses: appleboy/ssh-action@master
@@ -46,37 +47,72 @@ jobs:
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         port: ${{ secrets.PORT || 22 }}
+        timeout: 300s
         script: |
+          set -e
+          set -x
+          
+          echo "=== Starting Frontend Deployment ==="
+          
           # Create backup
+          echo "Step 1: Creating backup..."
           if [ -d "/var/www/registration-system/frontend/dist" ]; then
             sudo mv /var/www/registration-system/frontend/dist \
-              /var/www/registration-system/frontend/dist.backup.$(date +%Y%m%d_%H%M%S)
+              /var/www/registration-system/frontend/dist.backup.$(date +%Y%m%d_%H%M%S) || true
+            echo "✅ Backup created"
+          else
+            echo "ℹ️  No existing dist directory to backup"
           fi
           
-          # Deploy new files - move contents from dist subdirectory
+          # Deploy new files
+          echo "Step 2: Preparing deployment directory..."
           sudo mkdir -p /var/www/registration-system/frontend/dist
           sudo rm -rf /var/www/registration-system/frontend/dist/*
+          echo "✅ Directory prepared"
           
-          # Check if files are in /tmp/frontend-deploy/dist/ or directly in /tmp/frontend-deploy/
+          # Check and copy files
+          echo "Step 3: Checking uploaded files..."
+          ls -la /tmp/frontend-deploy/ || echo "⚠️  /tmp/frontend-deploy/ not found or empty"
+          
+          echo "Step 4: Copying files..."
           if [ -d "/tmp/frontend-deploy/dist" ]; then
-            # Files are in nested dist directory, move contents up
-            sudo cp -r /tmp/frontend-deploy/dist/* /var/www/registration-system/frontend/dist/
+            echo "📁 Found nested dist directory, copying from dist subdirectory..."
+            sudo cp -r /tmp/frontend-deploy/dist/* /var/www/registration-system/frontend/dist/ || true
           else
-            # Files are directly in deploy directory
-            sudo cp -r /tmp/frontend-deploy/* /var/www/registration-system/frontend/dist/
+            echo "📁 Files directly in deploy directory, copying..."
+            sudo cp -r /tmp/frontend-deploy/* /var/www/registration-system/frontend/dist/ || true
+          fi
+          echo "✅ Files copied"
+          
+          # Verify files
+          echo "Step 5: Verifying deployment..."
+          ls -la /var/www/registration-system/frontend/dist/ || echo "⚠️  No files in dist directory"
+          if [ -f "/var/www/registration-system/frontend/dist/index.html" ]; then
+            echo "✅ index.html found"
+          else
+            echo "❌ index.html NOT found!"
+            exit 1
           fi
           
           # Set permissions
+          echo "Step 6: Setting permissions..."
           sudo chown -R www-data:www-data /var/www/registration-system/frontend/dist
           sudo chmod -R 755 /var/www/registration-system/frontend/dist
+          echo "✅ Permissions set"
           
           # Reload Nginx
-          sudo nginx -t && sudo systemctl reload nginx
+          echo "Step 7: Reloading Nginx..."
+          sudo nginx -t || (echo "❌ Nginx config test failed!" && exit 1)
+          sudo systemctl daemon-reload || true
+          sudo systemctl reload nginx || sudo systemctl restart nginx
+          echo "✅ Nginx reloaded"
           
           # Cleanup
-          sudo rm -rf /tmp/frontend-deploy
+          echo "Step 8: Cleaning up..."
+          sudo rm -rf /tmp/frontend-deploy || true
+          echo "✅ Cleanup completed"
           
-          echo "Frontend deployment completed successfully!"
+          echo "=== Frontend Deployment Completed Successfully! ==="
 
     - name: Deployment status
       if: always()
