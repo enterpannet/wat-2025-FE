@@ -33,6 +33,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
 
           {/* Navigation Links */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Main Dashboard */}
             <NavLink
               to="/admin/dashboard"
               className={({ isActive }) =>
@@ -45,54 +46,78 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
             >
               หน้าจัดการ
             </NavLink>
-            <NavLink
-              to="/admin/listtum"
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
-                  isActive
-                    ? "bg-white text-purple-600 shadow-lg"
-                    : "text-white hover:bg-purple-700"
-                }`
-              }
-            >
-              รายชื่อทั้งหมด
-            </NavLink>
-            <NavLink
-              to="/admin/income-expense"
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
-                  isActive
-                    ? "bg-white text-purple-600 shadow-lg"
-                    : "text-white hover:bg-purple-700"
-                }`
-              }
-            >
-              รายรับ-รายจ่าย
-            </NavLink>
-            <NavLink
-              to="/admin/summary"
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
-                  isActive
-                    ? "bg-white text-purple-600 shadow-lg"
-                    : "text-white hover:bg-purple-700"
-                }`
-              }
-            >
-              สรุป
-            </NavLink>
-            <NavLink
-              to="/admin/activity-logs"
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
-                  isActive
-                    ? "bg-white text-purple-600 shadow-lg"
-                    : "text-white hover:bg-purple-700"
-                }`
-              }
-            >
-              บันทึกกิจกรรม
-            </NavLink>
+
+            {/* ส่วนการลงทะเบียน */}
+            <div className="relative group">
+              <div className="px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-sm cursor-pointer border-r border-purple-400 pr-0">
+                <span className="px-2">📋 การลงทะเบียน</span>
+              </div>
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="py-2">
+                  <NavLink
+                    to="/admin/registration/list"
+                    className={({ isActive }) =>
+                      `block px-4 py-2 text-sm ${
+                        isActive
+                          ? "bg-purple-100 text-purple-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`
+                    }
+                  >
+                    รายชื่อทั้งหมด
+                  </NavLink>
+                  <NavLink
+                    to="/admin/registration/activity-logs"
+                    className={({ isActive }) =>
+                      `block px-4 py-2 text-sm ${
+                        isActive
+                          ? "bg-purple-100 text-purple-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`
+                    }
+                  >
+                    บันทึกกิจกรรม
+                  </NavLink>
+                </div>
+              </div>
+            </div>
+
+            {/* ส่วนรายรับ-รายจ่าย */}
+            <div className="relative group">
+              <div className="px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-sm cursor-pointer border-r border-purple-400 pr-0">
+                <span className="px-2">💰 รายรับ-รายจ่าย</span>
+              </div>
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="py-2">
+                  <NavLink
+                    to="/admin/finance/transactions"
+                    className={({ isActive }) =>
+                      `block px-4 py-2 text-sm ${
+                        isActive
+                          ? "bg-purple-100 text-purple-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`
+                    }
+                  >
+                    บันทึกรายรับ-รายจ่าย
+                  </NavLink>
+                  <NavLink
+                    to="/admin/finance/summary"
+                    className={({ isActive }) =>
+                      `block px-4 py-2 text-sm ${
+                        isActive
+                          ? "bg-purple-100 text-purple-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`
+                    }
+                  >
+                    สรุปข้อมูล
+                  </NavLink>
+                </div>
+              </div>
+            </div>
+
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold text-sm"

@@ -23,6 +23,8 @@ function App() {
         <Route path="/admin/register" element={<AdminRegister />} />
 
         {/* Admin Routes - Protected (ต้อง login ก่อน) */}
+        
+        {/* Main Dashboard */}
         <Route
           path="/admin/dashboard"
           element={
@@ -31,6 +33,44 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ส่วนการลงทะเบียน (Registration Section) */}
+        <Route
+          path="/admin/registration/list"
+          element={
+            <ProtectedRoute>
+              <ListTum />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/registration/activity-logs"
+          element={
+            <ProtectedRoute>
+              <ActivityLogPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ส่วนรายรับ-รายจ่าย (Finance/Transaction Section) */}
+        <Route
+          path="/admin/finance/transactions"
+          element={
+            <ProtectedRoute>
+              <IncomeExpense />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/finance/summary"
+          element={
+            <ProtectedRoute>
+              <Summary />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Legacy routes - redirect for backward compatibility */}
         <Route
           path="/admin/listtum"
           element={
