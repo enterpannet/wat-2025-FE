@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios, { AxiosError } from "axios";
-import { Registration } from "../../types";
 import AdminNavbar from "./AdminNavbar";
 
 interface ErrorResponse {
@@ -14,16 +13,23 @@ interface User {
   full_name: string;
 }
 
+interface Stats {
+  totalRegistrations: number;
+  totalTransactions: number;
+}
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [user, setUser] = useState<User | null>(null);
+  const [stats, setStats] = useState<Stats>({
+    totalRegistrations: 0,
+    totalTransactions: 0,
+  });
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     checkAuth();
-    fetchRegistrations();
+    fetchStats();
   }, []);
 
   const checkAuth = async (): Promise<void> => {
@@ -38,63 +44,40 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchRegistrations = async (): Promise<void> => {
+  const fetchStats = async (): Promise<void> => {
     try {
-      const response = await axios.get<Registration[]>(
+      // Fetch registrations count
+      const registrationsResponse = await axios.get(
         "/api/admin/registrations",
         { withCredentials: true },
       );
-      setRegistrations(response.data);
+      const totalRegistrations = registrationsResponse.data.length || 0;
+
+      // Fetch transactions count
+      const transactionsResponse = await axios.get("/api/admin/transactions", {
+        withCredentials: true,
+      });
+      const totalTransactions = transactionsResponse.data.length || 0;
+
+      setStats({
+        totalRegistrations,
+        totalTransactions,
+      });
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
       if (axiosError.response?.status === 401) {
         navigate("/admin/login");
-      } else {
-        setError("ไม่สามารถโหลดข้อมูลได้");
       }
+      // If stats fail, continue with 0 values
     } finally {
       setLoading(false);
     }
   };
 
-  // const handleLogout = async (): Promise<void> => {
-  //   try {
-  //     await axios.post("/api/auth/logout", {}, { withCredentials: true });
-  //     navigate("/admin/login");
-  //   } catch (err) {
-  //     console.error("Logout error:", err);
-  //   }
-  // };
-
-  const handleDelete = async (id: number): Promise<void> => {
-    if (!confirm("คุณแน่ใจหรือไม่ที่จะลบข้อมูลนี้?")) {
-      return;
-    }
-
-    try {
-      await axios.delete(`/api/admin/registrations/${id}`, {
-        withCredentials: true,
-      });
-      // Refresh list
-      fetchRegistrations();
-    } catch (err) {
-      alert("ไม่สามารถลบข้อมูลได้");
-    }
-  };
-
-  const formatShortDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("th-TH", {
-      year: "2-digit",
-      month: "2-digit",
-      day: "2-digit",
-    });
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-white text-xl">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center">
+        <div className="animate-pulse text-purple-600 text-xl font-semibold">
           กำลังโหลดข้อมูล...
         </div>
       </div>
@@ -102,132 +85,125 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100">
       <AdminNavbar userName={user?.full_name} />
 
-      <div className="py-8 px-4">
+      <div className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Data Table */}
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                รายการลงทะเบียน
+          {/* Welcome Section */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">
+              ยินดีต้อนรับเข้าสู่ระบบจัดการข้อมูล
+            </h1>
+            <p className="text-lg text-gray-600">
+              เลือกส่วนที่ต้องการจัดการ
+            </p>
+          </div>
+
+          {/* Main Action Cards */}
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            {/* การลงทะเบียน Card */}
+            <div
+              onClick={() => navigate("/admin/registration/list")}
+              className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
+                  📋
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-blue-600">
+                    {stats.totalRegistrations}
+                  </div>
+                  <div className="text-sm text-gray-500">รายการลงทะเบียน</div>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                ส่วนการลงทะเบียน
               </h2>
-              <div className="text-sm text-gray-600">
-                ทั้งหมด {registrations.length} รายการ
+              <p className="text-gray-600 mb-6">
+                จัดการข้อมูลผู้ลงทะเบียน ดูรายชื่อทั้งหมด และบันทึกกิจกรรม
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                  รายชื่อทั้งหมด
+                </span>
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                  บันทึกกิจกรรม
+                </span>
+              </div>
+              <button className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg group-hover:shadow-xl">
+                เข้าสู่ส่วนการลงทะเบียน →
+              </button>
+            </div>
+
+            {/* รายรับ-รายจ่าย Card */}
+            <div
+              onClick={() => navigate("/admin/finance/transactions")}
+              className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
+                  💰
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-green-600">
+                    {stats.totalTransactions}
+                  </div>
+                  <div className="text-sm text-gray-500">รายการธุรกรรม</div>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                ส่วนรายรับ-รายจ่าย
+              </h2>
+              <p className="text-gray-600 mb-6">
+                บันทึกและจัดการรายรับ-รายจ่าย รวมถึงดูสรุปข้อมูลการเงิน
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                  บันทึกรายรับ-รายจ่าย
+                </span>
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                  สรุปข้อมูล
+                </span>
+              </div>
+              <button className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-lg group-hover:shadow-xl">
+                เข้าสู่ส่วนรายรับ-รายจ่าย →
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    สถิติการลงทะเบียน
+                  </h3>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {stats.totalRegistrations}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">รายการทั้งหมด</p>
+                </div>
+                <div className="text-5xl">📊</div>
               </div>
             </div>
 
-            {error && (
-              <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                {error}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    สถิติธุรกรรม
+                  </h3>
+                  <p className="text-3xl font-bold text-green-600">
+                    {stats.totalTransactions}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">รายการทั้งหมด</p>
+                </div>
+                <div className="text-5xl">💳</div>
               </div>
-            )}
-
-            {registrations.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <p className="text-xl">ยังไม่มีข้อมูลการลงทะเบียน</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-purple-600 text-white">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        ลำดับ
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        ชื่อ-นามสกุล
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        ฉายา
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        วันเกิด
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        เบอร์โทร
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        ที่อยู่
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        วัด
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        โรคประจำตัว
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        วันที่ลงทะเบียน
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">
-                        จัดการ
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {registrations.map((registration, index) => (
-                      <tr
-                        key={registration.id}
-                        className="hover:bg-purple-50 transition-colors"
-                      >
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {index + 1}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm font-semibold text-purple-700">
-                            {registration.full_name}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {registration.nickname || "-"}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {formatShortDate(registration.birth_date)}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {registration.phone_number}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-700">
-                          <div className="max-w-xs">
-                            <div className="font-medium">
-                              {registration.address_detail}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              ต.{registration.sub_district?.name_th || "-"} อ.
-                              {registration.district?.name_th || "-"} จ.
-                              {registration.province?.name_th || "-"}
-                              {registration.sub_district?.zip_code && (
-                                <> {registration.sub_district.zip_code}</>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {registration.temple_name || "-"}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-700">
-                          <div className="max-w-xs">
-                            {registration.medical_condition || "-"}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatShortDate(registration.created_at)}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-center">
-                          <button
-                            onClick={() => handleDelete(registration.id)}
-                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-all"
-                          >
-                            ลบ
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
