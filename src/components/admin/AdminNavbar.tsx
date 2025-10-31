@@ -64,6 +64,18 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                       }`
                     }
                   >
+                    Dashboard การลงทะเบียน
+                  </NavLink>
+                  <NavLink
+                    to="/admin/registration/detail"
+                    className={({ isActive }) =>
+                      `block px-4 py-2 text-sm ${
+                        isActive
+                          ? "bg-purple-100 text-purple-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`
+                    }
+                  >
                     รายชื่อทั้งหมด
                   </NavLink>
                   <NavLink
@@ -91,6 +103,18 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                 <div className="py-2">
                   <NavLink
                     to="/admin/finance/transactions"
+                    className={({ isActive }) =>
+                      `block px-4 py-2 text-sm ${
+                        isActive
+                          ? "bg-purple-100 text-purple-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`
+                    }
+                  >
+                    Dashboard รายรับ-รายจ่าย
+                  </NavLink>
+                  <NavLink
+                    to="/admin/finance/manage"
                     className={({ isActive }) =>
                       `block px-4 py-2 text-sm ${
                         isActive

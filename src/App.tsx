@@ -4,6 +4,8 @@ import RegistrationForm from "./components/RegistrationForm";
 import AdminLogin from "./components/admin/AdminLogin";
 import AdminRegister from "./components/admin/AdminRegister";
 import AdminDashboard from "./components/admin/AdminDashboard";
+import RegistrationDashboard from "./components/admin/RegistrationDashboard";
+import FinanceDashboard from "./components/admin/FinanceDashboard";
 import ListTum from "./components/admin/ListTum";
 import IncomeExpense from "./components/admin/IncomeExpense";
 import Summary from "./components/admin/Summary";
@@ -41,6 +43,14 @@ function App() {
           path="/admin/registration/list"
           element={
             <ProtectedRoute>
+              <RegistrationDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/registration/detail"
+          element={
+            <ProtectedRoute>
               <ListTum />
             </ProtectedRoute>
           }
@@ -57,6 +67,14 @@ function App() {
         {/* ส่วนรายรับ-รายจ่าย (Finance/Transaction Section) */}
         <Route
           path="/admin/finance/transactions"
+          element={
+            <ProtectedRoute>
+              <FinanceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/finance/manage"
           element={
             <ProtectedRoute>
               <IncomeExpense />
