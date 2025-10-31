@@ -1,0 +1,80 @@
+name: Deploy Frontend to Ubuntu
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: bun install --frozen-lockfile
+
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: |
+        bun run build
+        echo "Frontend built successfully"
+
+    - name: Upload built files to server
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.PORT || 22 }}
+        source: "frontend/dist/**/*"
+        target: "/tmp/frontend-deploy"
+
+    - name: Deploy to production
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.PORT || 22 }}
+        script: |
+          # Create backup
+          if [ -d "/var/www/registration-system/frontend/dist" ]; then
+            sudo mv /var/www/registration-system/frontend/dist \
+              /var/www/registration-system/frontend/dist.backup.$(date +%Y%m%d_%H%M%S)
+          fi
+          
+          # Deploy new files
+          sudo mkdir -p /var/www/registration-system/frontend/dist
+          sudo cp -r /tmp/frontend-deploy/* /var/www/registration-system/frontend/dist/
+          
+          # Set permissions
+          sudo chown -R www-data:www-data /var/www/registration-system/frontend/dist
+          sudo chmod -R 755 /var/www/registration-system/frontend/dist
+          
+          # Reload Nginx
+          sudo nginx -t && sudo systemctl reload nginx
+          
+          # Cleanup
+          sudo rm -rf /tmp/frontend-deploy
+          
+          echo "Frontend deployment completed successfully!"
+
+    - name: Deployment status
+      if: always()
+      run: |
+        echo "Deployment finished with status: ${{ job.status }}"
+
