@@ -31,6 +31,7 @@ const RegistrationList: React.FC = () => {
       day: "2-digit",
     });
   };
+  
 
   if (loading) {
     return (
