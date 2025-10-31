@@ -400,7 +400,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
           </form>
         </div>
       </div>
-    </div>
+      </div>
+      </div>
   );
 };
 

@@ -211,8 +211,10 @@ const DeviceLog: React.FC = () => {
             </button>
           </form>
         </div>
+        </div>
       </div>
-    </div>
+      </div>
+    
   );
 };
 
