@@ -10,7 +10,7 @@ interface AdminNavbarProps {
 const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -35,44 +35,34 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
     }
   };
 
+  const hasRegistrationRole = !user?.roles || user.roles.includes("registration");
+  const hasFinanceRole = !user?.roles || user.roles.includes("finance");
+
   return (
     <nav className="bg-gradient-to-r from-purple-600 to-purple-800 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex justify-between items-center">
-          {/* Logo / Brand */}
-          <div className="text-white">
-            <h1 className="text-xl md:text-2xl font-bold">ระบบจัดการข้อมูล</h1>
+        {/* Top Bar with Logo and Mobile Menu Button */}
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+              ระบบจัดการข้อมูล
+            </h1>
             {userName && (
-              <p className="text-xs md:text-sm text-purple-200 mt-1 hidden md:block">
+              <p className="hidden md:block text-xs md:text-sm text-purple-200 mt-1">
                 ยินดีต้อนรับ {userName}
               </p>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden text-white hover:bg-purple-700 p-2 rounded-lg transition-all"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
-
-          {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center gap-2 flex-wrap">
-            {/* Main Dashboard */}
+          {/* Desktop Menu - Show on md and up */}
+          <div className="hidden md:flex md:items-center md:space-x-2">
+            {/* Dashboard */}
             <NavLink
               to="/admin/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
+                `px-3 md:px-4 py-2 rounded-lg font-semibold transition-all text-xs md:text-sm ${
                   isActive
                     ? "bg-white text-purple-600 shadow-lg"
                     : "text-white hover:bg-purple-700"
@@ -82,11 +72,12 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
               หน้าจัดการ
             </NavLink>
 
-            {/* User Management - Available to all roles */}
+            {/* User Management */}
             <NavLink
               to="/admin/users"
+              onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
+                `px-3 md:px-4 py-2 rounded-lg font-semibold transition-all text-xs md:text-sm ${
                   isActive
                     ? "bg-white text-purple-600 shadow-lg"
                     : "text-white hover:bg-purple-700"
@@ -96,13 +87,16 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
               👥 จัดการผู้ใช้
             </NavLink>
 
-            {/* ส่วนการลงทะเบียน - Show if user has registration role */}
-            {(!user?.roles || user.roles.includes("registration")) && (
+            {/* Registration Menu */}
+            {hasRegistrationRole && (
               <div className="relative group">
-                <div className="px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-sm cursor-pointer border-r border-purple-400 pr-0">
-                  <span className="px-2">📋 การลงทะเบียน</span>
-                </div>
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <button className="px-3 md:px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-xs md:text-sm flex items-center gap-1">
+                  📋 การลงทะเบียน
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-2">
                     <NavLink
                       to="/admin/registration/list"
@@ -145,13 +139,16 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
               </div>
             )}
 
-            {/* ส่วนรายรับ-รายจ่าย - Show if user has finance role */}
-            {(!user?.roles || user.roles.includes("finance")) && (
+            {/* Finance Menu */}
+            {hasFinanceRole && (
               <div className="relative group">
-                <div className="px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-sm cursor-pointer border-r border-purple-400 pr-0">
-                  <span className="px-2">💰 รายรับ-รายจ่าย</span>
-                </div>
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <button className="px-3 md:px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-xs md:text-sm flex items-center gap-1">
+                  💰 รายรับ-รายจ่าย
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-2">
                     <NavLink
                       to="/admin/finance/transactions"
@@ -197,26 +194,47 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold text-sm"
+              className="px-3 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold text-xs md:text-sm whitespace-nowrap"
             >
               ออกจากระบบ
             </button>
           </div>
+
+          {/* Mobile Menu Button - Show on small screens */}
+          <div className="md:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-lg text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300"
+              aria-expanded="false"
+              aria-label="Toggle mobile menu"
+            >
+              {mobileMenuOpen ? (
+                <svg className="block h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="block h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 space-y-2">
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-4 pb-4 border-t border-purple-500 space-y-1">
             {userName && (
-              <p className="text-sm text-purple-200 mb-3 px-2">ยินดีต้อนรับ {userName}</p>
+              <p className="text-sm text-purple-200 px-4 py-3">ยินดีต้อนรับ {userName}</p>
             )}
             
-            {/* Main Dashboard */}
+            {/* Mobile Dashboard */}
             <NavLink
               to="/admin/dashboard"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `block px-4 py-2 rounded-lg font-semibold transition-all ${
+                `block px-4 py-3 rounded-lg font-semibold transition-all ${
                   isActive
                     ? "bg-white text-purple-600 shadow-lg"
                     : "text-white hover:bg-purple-700"
@@ -226,12 +244,12 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
               หน้าจัดการ
             </NavLink>
 
-            {/* User Management */}
+            {/* Mobile User Management */}
             <NavLink
               to="/admin/users"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `block px-4 py-2 rounded-lg font-semibold transition-all ${
+                `block px-4 py-3 rounded-lg font-semibold transition-all ${
                   isActive
                     ? "bg-white text-purple-600 shadow-lg"
                     : "text-white hover:bg-purple-700"
@@ -241,15 +259,17 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
               👥 จัดการผู้ใช้
             </NavLink>
 
-            {/* ส่วนการลงทะเบียน */}
-            {(!user?.roles || user.roles.includes("registration")) && (
-              <div className="border-t border-purple-500 pt-2 mt-2">
-                <p className="px-4 py-2 text-purple-200 text-sm font-semibold">📋 การลงทะเบียน</p>
+            {/* Mobile Registration Section */}
+            {hasRegistrationRole && (
+              <>
+                <div className="px-4 py-2 border-t border-purple-500 mt-2">
+                  <p className="text-purple-200 text-sm font-semibold">📋 การลงทะเบียน</p>
+                </div>
                 <NavLink
                   to="/admin/registration/list"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `block px-6 py-2 text-sm rounded-lg transition-all ${
+                    `block px-8 py-3 rounded-lg transition-all text-sm ${
                       isActive
                         ? "bg-purple-700 text-white"
                         : "text-purple-100 hover:bg-purple-700"
@@ -260,9 +280,9 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                 </NavLink>
                 <NavLink
                   to="/admin/registration/detail"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `block px-6 py-2 text-sm rounded-lg transition-all ${
+                    `block px-8 py-3 rounded-lg transition-all text-sm ${
                       isActive
                         ? "bg-purple-700 text-white"
                         : "text-purple-100 hover:bg-purple-700"
@@ -273,9 +293,9 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                 </NavLink>
                 <NavLink
                   to="/admin/registration/activity-logs"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `block px-6 py-2 text-sm rounded-lg transition-all ${
+                    `block px-8 py-3 rounded-lg transition-all text-sm ${
                       isActive
                         ? "bg-purple-700 text-white"
                         : "text-purple-100 hover:bg-purple-700"
@@ -284,18 +304,20 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                 >
                   บันทึกกิจกรรม
                 </NavLink>
-              </div>
+              </>
             )}
 
-            {/* ส่วนรายรับ-รายจ่าย */}
-            {(!user?.roles || user.roles.includes("finance")) && (
-              <div className="border-t border-purple-500 pt-2 mt-2">
-                <p className="px-4 py-2 text-purple-200 text-sm font-semibold">💰 รายรับ-รายจ่าย</p>
+            {/* Mobile Finance Section */}
+            {hasFinanceRole && (
+              <>
+                <div className="px-4 py-2 border-t border-purple-500 mt-2">
+                  <p className="text-purple-200 text-sm font-semibold">💰 รายรับ-รายจ่าย</p>
+                </div>
                 <NavLink
                   to="/admin/finance/transactions"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `block px-6 py-2 text-sm rounded-lg transition-all ${
+                    `block px-8 py-3 rounded-lg transition-all text-sm ${
                       isActive
                         ? "bg-purple-700 text-white"
                         : "text-purple-100 hover:bg-purple-700"
@@ -306,9 +328,9 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                 </NavLink>
                 <NavLink
                   to="/admin/finance/manage"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `block px-6 py-2 text-sm rounded-lg transition-all ${
+                    `block px-8 py-3 rounded-lg transition-all text-sm ${
                       isActive
                         ? "bg-purple-700 text-white"
                         : "text-purple-100 hover:bg-purple-700"
@@ -319,9 +341,9 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                 </NavLink>
                 <NavLink
                   to="/admin/finance/summary"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `block px-6 py-2 text-sm rounded-lg transition-all ${
+                    `block px-8 py-3 rounded-lg transition-all text-sm ${
                       isActive
                         ? "bg-purple-700 text-white"
                         : "text-purple-100 hover:bg-purple-700"
@@ -330,17 +352,17 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                 >
                   สรุปข้อมูล
                 </NavLink>
-              </div>
+              </>
             )}
 
-            {/* Logout Button */}
-            <div className="border-t border-purple-500 pt-2 mt-2">
+            {/* Mobile Logout */}
+            <div className="pt-2 mt-2 border-t border-purple-500">
               <button
                 onClick={() => {
                   handleLogout();
-                  setIsMobileMenuOpen(false);
+                  setMobileMenuOpen(false);
                 }}
-                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold text-sm"
+                className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold text-sm"
               >
                 ออกจากระบบ
               </button>
