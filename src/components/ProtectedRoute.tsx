@@ -1,20 +1,17 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import axios from "axios";
+import { User } from "../types";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  allowedRoles?: ("registration" | "finance")[];
 }
 
-interface User {
-  id: number;
-  username: string;
-  full_name: string;
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -22,9 +19,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      await axios.get<User>("/api/admin/me", {
+      const response = await axios.get<User>("/api/admin/me", {
         withCredentials: true,
       });
+      setUser(response.data);
       setIsAuthenticated(true);
     } catch (err) {
       setIsAuthenticated(false);
@@ -43,6 +41,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
+  }
+
+  // Check role-based access
+  if (allowedRoles && user && user.role && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   return <>{children}</>;

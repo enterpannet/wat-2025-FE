@@ -1,5 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useState, useEffect } from "react";
+import { User } from "../../types";
 
 interface AdminNavbarProps {
   userName?: string;
@@ -7,6 +9,21 @@ interface AdminNavbarProps {
 
 const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get<User>("/api/admin/me", {
+          withCredentials: true,
+        });
+        setUser(response.data);
+      } catch (err) {
+        console.error("Failed to fetch user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleLogout = async (): Promise<void> => {
     try {
@@ -47,99 +64,117 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
               หน้าจัดการ
             </NavLink>
 
-            {/* ส่วนการลงทะเบียน */}
-            <div className="relative group">
-              <div className="px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-sm cursor-pointer border-r border-purple-400 pr-0">
-                <span className="px-2">📋 การลงทะเบียน</span>
-              </div>
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                <div className="py-2">
-                  <NavLink
-                    to="/admin/registration/list"
-                    className={({ isActive }) =>
-                      `block px-4 py-2 text-sm ${
-                        isActive
-                          ? "bg-purple-100 text-purple-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`
-                    }
-                  >
-                    Dashboard การลงทะเบียน
-                  </NavLink>
-                  <NavLink
-                    to="/admin/registration/detail"
-                    className={({ isActive }) =>
-                      `block px-4 py-2 text-sm ${
-                        isActive
-                          ? "bg-purple-100 text-purple-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`
-                    }
-                  >
-                    รายชื่อทั้งหมด
-                  </NavLink>
-                  <NavLink
-                    to="/admin/registration/activity-logs"
-                    className={({ isActive }) =>
-                      `block px-4 py-2 text-sm ${
-                        isActive
-                          ? "bg-purple-100 text-purple-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`
-                    }
-                  >
-                    บันทึกกิจกรรม
-                  </NavLink>
-                </div>
-              </div>
-            </div>
+            {/* User Management - Available to all roles */}
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) =>
+                `px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
+                  isActive
+                    ? "bg-white text-purple-600 shadow-lg"
+                    : "text-white hover:bg-purple-700"
+                }`
+              }
+            >
+              👥 จัดการผู้ใช้
+            </NavLink>
 
-            {/* ส่วนรายรับ-รายจ่าย */}
-            <div className="relative group">
-              <div className="px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-sm cursor-pointer border-r border-purple-400 pr-0">
-                <span className="px-2">💰 รายรับ-รายจ่าย</span>
-              </div>
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                <div className="py-2">
-                  <NavLink
-                    to="/admin/finance/transactions"
-                    className={({ isActive }) =>
-                      `block px-4 py-2 text-sm ${
-                        isActive
-                          ? "bg-purple-100 text-purple-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`
-                    }
-                  >
-                    Dashboard รายรับ-รายจ่าย
-                  </NavLink>
-                  <NavLink
-                    to="/admin/finance/manage"
-                    className={({ isActive }) =>
-                      `block px-4 py-2 text-sm ${
-                        isActive
-                          ? "bg-purple-100 text-purple-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`
-                    }
-                  >
-                    บันทึกรายรับ-รายจ่าย
-                  </NavLink>
-                  <NavLink
-                    to="/admin/finance/summary"
-                    className={({ isActive }) =>
-                      `block px-4 py-2 text-sm ${
-                        isActive
-                          ? "bg-purple-100 text-purple-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`
-                    }
-                  >
-                    สรุปข้อมูล
-                  </NavLink>
+            {/* ส่วนการลงทะเบียน - Show only for registration role or no role */}
+            {(!user?.role || user.role === "registration") && (
+              <div className="relative group">
+                <div className="px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-sm cursor-pointer border-r border-purple-400 pr-0">
+                  <span className="px-2">📋 การลงทะเบียน</span>
+                </div>
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <div className="py-2">
+                    <NavLink
+                      to="/admin/registration/list"
+                      className={({ isActive }) =>
+                        `block px-4 py-2 text-sm ${
+                          isActive
+                            ? "bg-purple-100 text-purple-700 font-semibold"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`
+                      }
+                    >
+                      Dashboard การลงทะเบียน
+                    </NavLink>
+                    <NavLink
+                      to="/admin/registration/detail"
+                      className={({ isActive }) =>
+                        `block px-4 py-2 text-sm ${
+                          isActive
+                            ? "bg-purple-100 text-purple-700 font-semibold"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`
+                      }
+                    >
+                      รายชื่อทั้งหมด
+                    </NavLink>
+                    <NavLink
+                      to="/admin/registration/activity-logs"
+                      className={({ isActive }) =>
+                        `block px-4 py-2 text-sm ${
+                          isActive
+                            ? "bg-purple-100 text-purple-700 font-semibold"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`
+                      }
+                    >
+                      บันทึกกิจกรรม
+                    </NavLink>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* ส่วนรายรับ-รายจ่าย - Show only for finance role or no role */}
+            {(!user?.role || user.role === "finance") && (
+              <div className="relative group">
+                <div className="px-4 py-2 rounded-lg font-semibold text-white hover:bg-purple-700 transition-all text-sm cursor-pointer border-r border-purple-400 pr-0">
+                  <span className="px-2">💰 รายรับ-รายจ่าย</span>
+                </div>
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <div className="py-2">
+                    <NavLink
+                      to="/admin/finance/transactions"
+                      className={({ isActive }) =>
+                        `block px-4 py-2 text-sm ${
+                          isActive
+                            ? "bg-purple-100 text-purple-700 font-semibold"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`
+                      }
+                    >
+                      Dashboard รายรับ-รายจ่าย
+                    </NavLink>
+                    <NavLink
+                      to="/admin/finance/manage"
+                      className={({ isActive }) =>
+                        `block px-4 py-2 text-sm ${
+                          isActive
+                            ? "bg-purple-100 text-purple-700 font-semibold"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`
+                      }
+                    >
+                      บันทึกรายรับ-รายจ่าย
+                    </NavLink>
+                    <NavLink
+                      to="/admin/finance/summary"
+                      className={({ isActive }) =>
+                        `block px-4 py-2 text-sm ${
+                          isActive
+                            ? "bg-purple-100 text-purple-700 font-semibold"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`
+                      }
+                    >
+                      สรุปข้อมูล
+                    </NavLink>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Logout Button */}
             <button

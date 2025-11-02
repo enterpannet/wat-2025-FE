@@ -7,6 +7,7 @@ interface RegisterFormData {
   password: string;
   confirmPassword: string;
   full_name: string;
+  role: "registration" | "finance";
 }
 
 interface ErrorResponse {
@@ -20,6 +21,7 @@ const AdminRegister: React.FC = () => {
     password: "",
     confirmPassword: "",
     full_name: "",
+    role: "registration",
   });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -49,6 +51,7 @@ const AdminRegister: React.FC = () => {
         username: formData.username,
         password: formData.password,
         full_name: formData.full_name,
+        role: formData.role,
       });
 
       setSuccess(true);
@@ -158,6 +161,26 @@ const AdminRegister: React.FC = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
                 placeholder="กรอกรหัสผ่านอีกครั้ง"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                บทบาท (Role) <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData({ ...formData, role: e.target.value as "registration" | "finance" })
+                }
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+              >
+                <option value="registration">ผู้ดูแลระบบลงทะเบียน</option>
+                <option value="finance">ผู้ดูแลรายรับ-รายจ่าย</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-2">
+                เลือกบทบาทที่จะสามารถเข้าถึงได้: การลงทะเบียน หรือ รายรับ-รายจ่าย
+              </p>
             </div>
 
             <button

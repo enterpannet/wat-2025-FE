@@ -2,15 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios, { AxiosError } from "axios";
 import AdminNavbar from "./AdminNavbar";
+import { User } from "../../types";
 
 interface ErrorResponse {
   error: string;
-}
-
-interface User {
-  id: number;
-  username: string;
-  full_name: string;
 }
 
 interface Stats {
@@ -29,8 +24,13 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     checkAuth();
-    fetchStats();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
 
   const checkAuth = async (): Promise<void> => {
     try {
@@ -46,23 +46,44 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = async (): Promise<void> => {
     try {
-      // Fetch registrations count
-      const registrationsResponse = await axios.get(
-        "/api/admin/registrations",
-        { withCredentials: true },
-      );
-      const totalRegistrations = registrationsResponse.data.length || 0;
+      // Fetch stats based on user role
+      if (user?.role === "registration") {
+        const registrationsResponse = await axios.get(
+          "/api/admin/registrations",
+          { withCredentials: true },
+        );
+        const totalRegistrations = registrationsResponse.data.length || 0;
+        setStats({
+          totalRegistrations,
+          totalTransactions: 0,
+        });
+      } else if (user?.role === "finance") {
+        const transactionsResponse = await axios.get("/api/admin/transactions", {
+          withCredentials: true,
+        });
+        const totalTransactions = transactionsResponse.data.length || 0;
+        setStats({
+          totalRegistrations: 0,
+          totalTransactions,
+        });
+      } else {
+        // Fetch both if role is undefined or invalid
+        const registrationsResponse = await axios.get(
+          "/api/admin/registrations",
+          { withCredentials: true },
+        );
+        const totalRegistrations = registrationsResponse.data.length || 0;
 
-      // Fetch transactions count
-      const transactionsResponse = await axios.get("/api/admin/transactions", {
-        withCredentials: true,
-      });
-      const totalTransactions = transactionsResponse.data.length || 0;
+        const transactionsResponse = await axios.get("/api/admin/transactions", {
+          withCredentials: true,
+        });
+        const totalTransactions = transactionsResponse.data.length || 0;
 
-      setStats({
-        totalRegistrations,
-        totalTransactions,
-      });
+        setStats({
+          totalRegistrations,
+          totalTransactions,
+        });
+      }
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
       if (axiosError.response?.status === 401) {
@@ -100,110 +121,118 @@ const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* Main Action Cards */}
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            {/* การลงทะเบียน Card */}
-            <div
-              onClick={() => navigate("/admin/registration/list")}
-              className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-                  📋
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-blue-600">
-                    {stats.totalRegistrations}
+          {/* Main Action Cards - Show based on role */}
+          <div className="grid md:grid-cols-1 gap-8 mb-8">
+            {/* Show Registration Card only for registration role or no role */}
+            {(!user?.role || user.role === "registration") && (
+              <div
+                onClick={() => navigate("/admin/registration/list")}
+                className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
+                    📋
                   </div>
-                  <div className="text-sm text-gray-500">รายการลงทะเบียน</div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {stats.totalRegistrations}
+                    </div>
+                    <div className="text-sm text-gray-500">รายการลงทะเบียน</div>
+                  </div>
                 </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                  ส่วนการลงทะเบียน
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  จัดการข้อมูลผู้ลงทะเบียน ดูรายชื่อทั้งหมด และบันทึกกิจกรรม
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                    รายชื่อทั้งหมด
+                  </span>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                    บันทึกกิจกรรม
+                  </span>
+                </div>
+                <button className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg group-hover:shadow-xl">
+                  เข้าสู่ส่วนการลงทะเบียน →
+                </button>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                ส่วนการลงทะเบียน
-              </h2>
-              <p className="text-gray-600 mb-6">
-                จัดการข้อมูลผู้ลงทะเบียน ดูรายชื่อทั้งหมด และบันทึกกิจกรรม
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-                  รายชื่อทั้งหมด
-                </span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-                  บันทึกกิจกรรม
-                </span>
-              </div>
-              <button className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg group-hover:shadow-xl">
-                เข้าสู่ส่วนการลงทะเบียน →
-              </button>
-            </div>
+            )}
 
-            {/* รายรับ-รายจ่าย Card */}
-            <div
-              onClick={() => navigate("/admin/finance/transactions")}
-              className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-                  💰
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-green-600">
-                    {stats.totalTransactions}
+            {/* Show Finance Card only for finance role or no role */}
+            {(!user?.role || user.role === "finance") && (
+              <div
+                onClick={() => navigate("/admin/finance/transactions")}
+                className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
+                    💰
                   </div>
-                  <div className="text-sm text-gray-500">รายการธุรกรรม</div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-green-600">
+                      {stats.totalTransactions}
+                    </div>
+                    <div className="text-sm text-gray-500">รายการธุรกรรม</div>
+                  </div>
                 </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                  ส่วนรายรับ-รายจ่าย
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  บันทึกและจัดการรายรับ-รายจ่าย รวมถึงดูสรุปข้อมูลการเงิน
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                    บันทึกรายรับ-รายจ่าย
+                  </span>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                    สรุปข้อมูล
+                  </span>
+                </div>
+                <button className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-lg group-hover:shadow-xl">
+                  เข้าสู่ส่วนรายรับ-รายจ่าย →
+                </button>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                ส่วนรายรับ-รายจ่าย
-              </h2>
-              <p className="text-gray-600 mb-6">
-                บันทึกและจัดการรายรับ-รายจ่าย รวมถึงดูสรุปข้อมูลการเงิน
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                  บันทึกรายรับ-รายจ่าย
-                </span>
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                  สรุปข้อมูล
-                </span>
-              </div>
-              <button className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-lg group-hover:shadow-xl">
-                เข้าสู่ส่วนรายรับ-รายจ่าย →
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    สถิติการลงทะเบียน
-                  </h3>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {stats.totalRegistrations}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">รายการทั้งหมด</p>
+          {/* Quick Stats - Show based on role */}
+          <div className="grid md:grid-cols-1 gap-6">
+            {(!user?.role || user.role === "registration") && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      สถิติการลงทะเบียน
+                    </h3>
+                    <p className="text-3xl font-bold text-blue-600">
+                      {stats.totalRegistrations}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">รายการทั้งหมด</p>
+                  </div>
+                  <div className="text-5xl">📊</div>
                 </div>
-                <div className="text-5xl">📊</div>
               </div>
-            </div>
+            )}
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    สถิติธุรกรรม
-                  </h3>
-                  <p className="text-3xl font-bold text-green-600">
-                    {stats.totalTransactions}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">รายการทั้งหมด</p>
+            {(!user?.role || user.role === "finance") && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      สถิติธุรกรรม
+                    </h3>
+                    <p className="text-3xl font-bold text-green-600">
+                      {stats.totalTransactions}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">รายการทั้งหมด</p>
+                  </div>
+                  <div className="text-5xl">💳</div>
                 </div>
-                <div className="text-5xl">💳</div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

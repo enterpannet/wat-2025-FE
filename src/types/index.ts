@@ -78,6 +78,7 @@ export interface User {
   id: number;
   username: string;
   full_name: string;
+  role?: "registration" | "finance";
 }
 
 export interface Transaction {
