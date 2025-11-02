@@ -46,8 +46,29 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = async (): Promise<void> => {
     try {
-      // Fetch stats based on user role
-      if (user?.role === "registration") {
+      const hasRegistration = user?.roles?.includes("registration");
+      const hasFinance = user?.roles?.includes("finance");
+      
+      // Fetch stats based on user roles
+      if (hasRegistration && hasFinance) {
+        // Both roles - fetch everything
+        const registrationsResponse = await axios.get(
+          "/api/admin/registrations",
+          { withCredentials: true },
+        );
+        const totalRegistrations = registrationsResponse.data.length || 0;
+
+        const transactionsResponse = await axios.get("/api/admin/transactions", {
+          withCredentials: true,
+        });
+        const totalTransactions = transactionsResponse.data.length || 0;
+
+        setStats({
+          totalRegistrations,
+          totalTransactions,
+        });
+      } else if (hasRegistration) {
+        // Only registration
         const registrationsResponse = await axios.get(
           "/api/admin/registrations",
           { withCredentials: true },
@@ -57,7 +78,8 @@ const AdminDashboard: React.FC = () => {
           totalRegistrations,
           totalTransactions: 0,
         });
-      } else if (user?.role === "finance") {
+      } else if (hasFinance) {
+        // Only finance
         const transactionsResponse = await axios.get("/api/admin/transactions", {
           withCredentials: true,
         });
@@ -67,7 +89,7 @@ const AdminDashboard: React.FC = () => {
           totalTransactions,
         });
       } else {
-        // Fetch both if role is undefined or invalid
+        // No roles or undefined - fetch both
         const registrationsResponse = await axios.get(
           "/api/admin/registrations",
           { withCredentials: true },
@@ -121,10 +143,10 @@ const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* Main Action Cards - Show based on role */}
-          <div className="grid md:grid-cols-1 gap-8 mb-8">
-            {/* Show Registration Card only for registration role or no role */}
-            {(!user?.role || user.role === "registration") && (
+          {/* Main Action Cards - Show based on roles */}
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            {/* Show Registration Card if user has registration role */}
+            {(!user?.roles || user.roles.includes("registration")) && (
               <div
                 onClick={() => navigate("/admin/registration/list")}
                 className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
@@ -160,8 +182,8 @@ const AdminDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Show Finance Card only for finance role or no role */}
-            {(!user?.role || user.role === "finance") && (
+            {/* Show Finance Card if user has finance role */}
+            {(!user?.roles || user.roles.includes("finance")) && (
               <div
                 onClick={() => navigate("/admin/finance/transactions")}
                 className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
@@ -198,9 +220,9 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* Quick Stats - Show based on role */}
-          <div className="grid md:grid-cols-1 gap-6">
-            {(!user?.role || user.role === "registration") && (
+          {/* Quick Stats - Show based on roles */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {(!user?.roles || user.roles.includes("registration")) && (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -217,7 +239,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             )}
 
-            {(!user?.role || user.role === "finance") && (
+            {(!user?.roles || user.roles.includes("finance")) && (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-center justify-between">
                   <div>

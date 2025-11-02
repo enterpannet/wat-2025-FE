@@ -19,7 +19,7 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editFormData, setEditFormData] = useState({
     full_name: "",
-    role: "registration" as "registration" | "finance",
+    roles: ["registration"] as ("registration" | "finance")[],
     is_active: true,
   });
 
@@ -58,7 +58,7 @@ const UserManagement: React.FC = () => {
     setEditingUser(user);
     setEditFormData({
       full_name: user.full_name,
-      role: user.role || "registration",
+      roles: user.roles || ["registration"],
       is_active: true,
     });
     setError("");
@@ -80,7 +80,7 @@ const UserManagement: React.FC = () => {
         `/api/admin/users/${userId}`,
         {
           full_name: editFormData.full_name,
-          role: editFormData.role,
+          roles: editFormData.roles,
         },
         { withCredentials: true }
       );
@@ -234,27 +234,51 @@ const UserManagement: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         {editingUser && editingUser.id === user.id ? (
-                          <select
-                            value={editFormData.role}
-                            onChange={(e) =>
-                              setEditFormData({
-                                ...editFormData,
-                                role: e.target.value as "registration" | "finance",
-                              })
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                          >
-                            <option value="registration">ผู้ดูแลระบบลงทะเบียน</option>
-                            <option value="finance">ผู้ดูแลรายรับ-รายจ่าย</option>
-                          </select>
+                          <div className="space-y-2 min-w-[200px]">
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editFormData.roles.includes("registration")}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setEditFormData({ ...editFormData, roles: [...editFormData.roles, "registration"] });
+                                  } else {
+                                    setEditFormData({ ...editFormData, roles: editFormData.roles.filter(r => r !== "registration") });
+                                  }
+                                }}
+                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">ระบบลงทะเบียน</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editFormData.roles.includes("finance")}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setEditFormData({ ...editFormData, roles: [...editFormData.roles, "finance"] });
+                                  } else {
+                                    setEditFormData({ ...editFormData, roles: editFormData.roles.filter(r => r !== "finance") });
+                                  }
+                                }}
+                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">รายรับ-รายจ่าย</span>
+                            </label>
+                          </div>
                         ) : (
-                          <span
-                            className={`px-3 py-1 rounded-full text-sm font-semibold ${getRoleBadgeColor(
-                              user.role
-                            )}`}
-                          >
-                            {getRoleLabel(user.role)}
-                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {user.roles?.map((role) => (
+                              <span
+                                key={role}
+                                className={`px-3 py-1 rounded-full text-sm font-semibold ${getRoleBadgeColor(
+                                  role
+                                )}`}
+                              >
+                                {getRoleLabel(role)}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </td>
                       <td className="px-6 py-4">
