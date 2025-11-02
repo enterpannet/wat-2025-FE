@@ -42,7 +42,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "mostdata.site",
+        target: "http://mostdata.site",
         changeOrigin: true,
       },
     },

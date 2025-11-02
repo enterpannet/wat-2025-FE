@@ -14,12 +14,17 @@ interface User {
   full_name: string;
 }
 
+type SortField = "full_name" | "birth_date" | "vassa" | "phone_number" | "temple_name";
+type SortDirection = "asc" | "desc";
+
 const ListTum: React.FC = () => {
   const navigate = useNavigate();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   useEffect(() => {
     checkAuth();
@@ -129,6 +134,43 @@ const ListTum: React.FC = () => {
     };
   }, [registrations]);
 
+  // Sorted registrations
+  const sortedRegistrations = useMemo(() => {
+    if (!sortField) return registrations;
+
+    const sorted = [...registrations].sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
+
+      // Handle date comparison
+      if (sortField === "birth_date") {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+
+      // Handle string comparison
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [registrations, sortField, sortDirection]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -174,8 +216,16 @@ const ListTum: React.FC = () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                         ลำดับ
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        ชื่อ-นามสกุล
+                      <th
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-purple-700 transition-colors"
+                        onClick={() => handleSort("full_name")}
+                      >
+                        <div className="flex items-center gap-1">
+                          ชื่อ-นามสกุล
+                          {sortField === "full_name" && (
+                            <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                          )}
+                        </div>
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                         ฉายา
@@ -183,14 +233,41 @@ const ListTum: React.FC = () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                         วันเกิด
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        เบอร์โทร
+                      <th
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-purple-700 transition-colors"
+                        onClick={() => handleSort("phone_number")}
+                      >
+                        <div className="flex items-center gap-1">
+                          เบอร์โทร
+                          {sortField === "phone_number" && (
+                            <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                          )}
+                        </div>
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                         ที่อยู่
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
-                        วัด
+                      <th
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-purple-700 transition-colors"
+                        onClick={() => handleSort("temple_name")}
+                      >
+                        <div className="flex items-center gap-1">
+                          วัด
+                          {sortField === "temple_name" && (
+                            <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-purple-800 transition-colors"
+                        onClick={() => handleSort("vassa")}
+                      >
+                        <div className="flex items-center gap-1">
+                          พรรษา
+                          {sortField === "vassa" && (
+                            <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                          )}
+                        </div>
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider bg-green-700">
                         <div>สวดปริวาสแล้ว</div>
@@ -213,7 +290,7 @@ const ListTum: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {registrations.map((registration, index) => (
+                    {sortedRegistrations.map((registration, index) => (
                       <tr
                         key={registration.id}
                         className="hover:bg-purple-50 transition-colors"
@@ -252,6 +329,9 @@ const ListTum: React.FC = () => {
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
                           {registration.temple_name || "-"}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700 text-center font-semibold">
+                          {registration.vassa || 0}
                         </td>
                         <td className="px-4 py-4 text-center bg-green-50">
                           <input
