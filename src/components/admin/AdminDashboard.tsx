@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 import AdminNavbar from "./AdminNavbar";
 import { User } from "../../types";
 
@@ -34,9 +34,7 @@ const AdminDashboard: React.FC = () => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await axios.get<User>("/api/admin/me", {
-        withCredentials: true,
-      });
+      const response = await api.get<User>("/api/admin/me");
       setUser(response.data);
     } catch (err) {
       // Not authenticated, redirect to login
@@ -52,15 +50,10 @@ const AdminDashboard: React.FC = () => {
       // Fetch stats based on user roles
       if (hasRegistration && hasFinance) {
         // Both roles - fetch everything
-        const registrationsResponse = await axios.get(
-          "/api/admin/registrations",
-          { withCredentials: true },
-        );
+        const registrationsResponse = await api.get("/api/admin/registrations");
         const totalRegistrations = registrationsResponse.data.length || 0;
 
-        const transactionsResponse = await axios.get("/api/admin/transactions", {
-          withCredentials: true,
-        });
+        const transactionsResponse = await api.get("/api/admin/transactions");
         const totalTransactions = transactionsResponse.data.length || 0;
 
         setStats({
@@ -69,10 +62,7 @@ const AdminDashboard: React.FC = () => {
         });
       } else if (hasRegistration) {
         // Only registration
-        const registrationsResponse = await axios.get(
-          "/api/admin/registrations",
-          { withCredentials: true },
-        );
+        const registrationsResponse = await api.get("/api/admin/registrations");
         const totalRegistrations = registrationsResponse.data.length || 0;
         setStats({
           totalRegistrations,
@@ -80,9 +70,7 @@ const AdminDashboard: React.FC = () => {
         });
       } else if (hasFinance) {
         // Only finance
-        const transactionsResponse = await axios.get("/api/admin/transactions", {
-          withCredentials: true,
-        });
+        const transactionsResponse = await api.get("/api/admin/transactions");
         const totalTransactions = transactionsResponse.data.length || 0;
         setStats({
           totalRegistrations: 0,
@@ -90,15 +78,10 @@ const AdminDashboard: React.FC = () => {
         });
       } else {
         // No roles or undefined - fetch both
-        const registrationsResponse = await axios.get(
-          "/api/admin/registrations",
-          { withCredentials: true },
-        );
+        const registrationsResponse = await api.get("/api/admin/registrations");
         const totalRegistrations = registrationsResponse.data.length || 0;
 
-        const transactionsResponse = await axios.get("/api/admin/transactions", {
-          withCredentials: true,
-        });
+        const transactionsResponse = await api.get("/api/admin/transactions");
         const totalTransactions = transactionsResponse.data.length || 0;
 
         setStats({

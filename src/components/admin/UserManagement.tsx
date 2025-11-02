@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 import AdminNavbar from "./AdminNavbar";
 import { User } from "../../types";
 
@@ -30,9 +30,7 @@ const UserManagement: React.FC = () => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      await axios.get<User>("/api/admin/me", {
-        withCredentials: true,
-      });
+      await api.get<User>("/api/admin/me");
     } catch (err) {
       navigate("/admin/login");
     }
@@ -42,9 +40,7 @@ const UserManagement: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await axios.get<User[]>("/api/admin/users", {
-        withCredentials: true,
-      });
+      const response = await api.get<User[]>("/api/admin/users");
       setUsers(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
@@ -76,13 +72,12 @@ const UserManagement: React.FC = () => {
     setSuccess("");
     
     try {
-      await axios.put(
+      await api.put(
         `/api/admin/users/${userId}`,
         {
           full_name: editFormData.full_name,
           roles: editFormData.roles,
-        },
-        { withCredentials: true }
+        }
       );
       
       setSuccess("อัพเดทข้อมูลสำเร็จ");
@@ -106,9 +101,7 @@ const UserManagement: React.FC = () => {
     setSuccess("");
     
     try {
-      await axios.delete(`/api/admin/users/${userId}`, {
-        withCredentials: true,
-      });
+      await api.delete(`/api/admin/users/${userId}`);
       
       setSuccess("ลบผู้ใช้สำเร็จ");
       fetchUsers();

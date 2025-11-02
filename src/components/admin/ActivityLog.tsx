@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 import { ActivityLog, ActivityLogRequest, User } from "../../types";
 import AdminNavbar from "./AdminNavbar";
 
@@ -29,9 +29,7 @@ const ActivityLogPage: React.FC = () => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await axios.get<User>("/api/admin/me", {
-        withCredentials: true,
-      });
+      const response = await api.get<User>("/api/admin/me");
       setUser(response.data);
     } catch (err) {
       navigate("/admin/login");
@@ -40,10 +38,7 @@ const ActivityLogPage: React.FC = () => {
 
   const fetchLogs = async (): Promise<void> => {
     try {
-      const response = await axios.get<ActivityLog[]>(
-        "/api/admin/activity-logs",
-        { withCredentials: true },
-      );
+      const response = await api.get<ActivityLog[]>("/api/admin/activity-logs");
       setLogs(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
@@ -67,9 +62,7 @@ const ActivityLogPage: React.FC = () => {
     }
 
     try {
-      await axios.post("/api/admin/activity-logs", formData, {
-        withCredentials: true,
-      });
+      await api.post("/api/admin/activity-logs", formData);
 
       fetchLogs();
       setShowForm(false);

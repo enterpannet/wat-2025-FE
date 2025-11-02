@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 import { Registration } from "../../types";
 import AdminNavbar from "./AdminNavbar";
 
@@ -33,9 +33,7 @@ const ListTum: React.FC = () => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await axios.get<User>("/api/admin/me", {
-        withCredentials: true,
-      });
+      const response = await api.get<User>("/api/admin/me");
       setUser(response.data);
     } catch (err) {
       // Not authenticated, redirect to login
@@ -45,10 +43,7 @@ const ListTum: React.FC = () => {
 
   const fetchRegistrations = async (): Promise<void> => {
     try {
-      const response = await axios.get<Registration[]>(
-        "/api/admin/registrations",
-        { withCredentials: true },
-      );
+      const response = await api.get<Registration[]>("/api/admin/registrations");
       setRegistrations(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
@@ -89,10 +84,9 @@ const ListTum: React.FC = () => {
         [field]: value,
       };
 
-      await axios.put(
+      await api.put(
         `/api/admin/registrations/${id}/chanting`,
-        updatedStatus,
-        { withCredentials: true },
+        updatedStatus
       );
 
       // Update local state

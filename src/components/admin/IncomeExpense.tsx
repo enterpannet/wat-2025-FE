@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 import { Transaction, TransactionRequest, User } from "../../types";
 import AdminNavbar from "./AdminNavbar";
 
@@ -32,9 +32,7 @@ const IncomeExpense: React.FC = () => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await axios.get<User>("/api/admin/me", {
-        withCredentials: true,
-      });
+      const response = await api.get<User>("/api/admin/me");
       setUser(response.data);
     } catch (err) {
       navigate("/admin/login");
@@ -43,10 +41,7 @@ const IncomeExpense: React.FC = () => {
 
   const fetchTransactions = async (): Promise<void> => {
     try {
-      const response = await axios.get<Transaction[]>(
-        "/api/admin/transactions",
-        { withCredentials: true },
-      );
+      const response = await api.get<Transaction[]>("/api/admin/transactions");
       setTransactions(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
@@ -66,15 +61,9 @@ const IncomeExpense: React.FC = () => {
 
     try {
       if (editingId) {
-        await axios.put(
-          `/api/admin/transactions/${editingId}`,
-          formData,
-          { withCredentials: true },
-        );
+        await api.put(`/api/admin/transactions/${editingId}`, formData);
       } else {
-        await axios.post("/api/admin/transactions", formData, {
-          withCredentials: true,
-        });
+        await api.post("/api/admin/transactions", formData);
       }
 
       fetchTransactions();
@@ -111,9 +100,7 @@ const IncomeExpense: React.FC = () => {
     }
 
     try {
-      await axios.delete(`/api/admin/transactions/${id}`, {
-        withCredentials: true,
-      });
+      await api.delete(`/api/admin/transactions/${id}`);
       fetchTransactions();
     } catch (err) {
       alert("ไม่สามารถลบข้อมูลได้");

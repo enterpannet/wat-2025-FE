@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import { User } from "../types";
 
 interface ProtectedRouteProps {
@@ -19,9 +19,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await axios.get<User>("/api/admin/me", {
-        withCredentials: true,
-      });
+      const response = await api.get<User>("/api/admin/me");
       setUser(response.data);
       setIsAuthenticated(true);
     } catch (err) {

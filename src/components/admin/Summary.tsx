@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 import { Summary as SummaryType, User } from "../../types";
 import AdminNavbar from "./AdminNavbar";
 
@@ -22,9 +22,7 @@ const Summary: React.FC = () => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await axios.get<User>("/api/admin/me", {
-        withCredentials: true,
-      });
+      const response = await api.get<User>("/api/admin/me");
       setUser(response.data);
     } catch (err) {
       navigate("/admin/login");
@@ -33,9 +31,7 @@ const Summary: React.FC = () => {
 
   const fetchSummary = async (): Promise<void> => {
     try {
-      const response = await axios.get<SummaryType>("/api/admin/summary", {
-        withCredentials: true,
-      });
+      const response = await api.get<SummaryType>("/api/admin/summary");
       setSummary(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;

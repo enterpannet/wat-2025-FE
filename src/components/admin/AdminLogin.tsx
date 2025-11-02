@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 
 interface LoginFormData {
   username: string;
@@ -26,11 +26,7 @@ const AdminLogin: React.FC = () => {
     setError("");
 
     try {
-      await axios.post(
-        "/api/auth/login",
-        formData,
-        { withCredentials: true } // Important for cookies
-      );
+      await api.post("/api/auth/login", formData);
 
       // Redirect to dashboard
       navigate("/admin/dashboard");

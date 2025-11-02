@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../api";
 import { useState, useEffect } from "react";
 import { User } from "../../types";
 
@@ -15,9 +15,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get<User>("/api/admin/me", {
-          withCredentials: true,
-        });
+        const response = await api.get<User>("/api/admin/me");
         setUser(response.data);
       } catch (err) {
         console.error("Failed to fetch user:", err);
@@ -28,7 +26,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
 
   const handleLogout = async (): Promise<void> => {
     try {
-      await axios.post("/api/auth/logout", {}, { withCredentials: true });
+      await api.post("/api/auth/logout", {});
       navigate("/admin/login");
     } catch (err) {
       console.error("Logout error:", err);

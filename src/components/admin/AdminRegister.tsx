@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 
 interface RegisterFormData {
   username: string;
@@ -47,7 +47,7 @@ const AdminRegister: React.FC = () => {
     }
 
     try {
-      await axios.post("/api/auth/register", {
+      await api.post("/api/auth/register", {
         username: formData.username,
         password: formData.password,
         full_name: formData.full_name,

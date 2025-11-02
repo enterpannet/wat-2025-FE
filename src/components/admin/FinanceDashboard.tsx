@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../../api";
 import { Transaction } from "../../types";
 import AdminNavbar from "./AdminNavbar";
 
@@ -28,9 +28,7 @@ const FinanceDashboard: React.FC = () => {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await axios.get<User>("/api/admin/me", {
-        withCredentials: true,
-      });
+      const response = await api.get<User>("/api/admin/me");
       setUser(response.data);
     } catch (err) {
       navigate("/admin/login");
@@ -39,10 +37,7 @@ const FinanceDashboard: React.FC = () => {
 
   const fetchTransactions = async (): Promise<void> => {
     try {
-      const response = await axios.get<Transaction[]>(
-        "/api/admin/transactions",
-        { withCredentials: true },
-      );
+      const response = await api.get<Transaction[]>("/api/admin/transactions");
       setTransactions(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
