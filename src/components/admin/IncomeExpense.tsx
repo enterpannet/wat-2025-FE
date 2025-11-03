@@ -41,7 +41,7 @@ const IncomeExpense: React.FC = () => {
 
   const fetchTransactions = async (): Promise<void> => {
     try {
-      const response = await api.get<Transaction[]>("/api/admin/transactions");
+      const response = await api.get<Transaction[]>("/api/finance/transactions");
       setTransactions(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
@@ -61,9 +61,9 @@ const IncomeExpense: React.FC = () => {
 
     try {
       if (editingId) {
-        await api.put(`/api/admin/transactions/${editingId}`, formData);
+        await api.put(`/api/finance/transactions/${editingId}`, formData);
       } else {
-        await api.post("/api/admin/transactions", formData);
+        await api.post("/api/finance/transactions", formData);
       }
 
       fetchTransactions();
@@ -100,7 +100,7 @@ const IncomeExpense: React.FC = () => {
     }
 
     try {
-      await api.delete(`/api/admin/transactions/${id}`);
+      await api.delete(`/api/finance/transactions/${id}`);
       fetchTransactions();
     } catch (err) {
       alert("ไม่สามารถลบข้อมูลได้");

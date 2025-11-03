@@ -158,3 +158,15 @@ export interface Summary {
     device_logs: number;
   };
 }
+
+export interface FinanceSummary {
+  total_income: number;
+  total_expense: number;
+  balance: number;
+  income_this_month: number;
+  expense_this_month: number;
+  balance_this_month: number;
+  total_transactions: number;
+  income_count: number;
+  expense_count: number;
+}

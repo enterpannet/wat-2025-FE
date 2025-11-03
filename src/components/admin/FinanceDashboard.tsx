@@ -37,7 +37,7 @@ const FinanceDashboard: React.FC = () => {
 
   const fetchTransactions = async (): Promise<void> => {
     try {
-      const response = await api.get<Transaction[]>("/api/admin/transactions");
+      const response = await api.get<Transaction[]>("/api/finance/transactions");
       setTransactions(response.data);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;

@@ -53,7 +53,7 @@ const AdminDashboard: React.FC = () => {
         const registrationsResponse = await api.get("/api/admin/registrations");
         const totalRegistrations = registrationsResponse.data.length || 0;
 
-        const transactionsResponse = await api.get("/api/admin/transactions");
+        const transactionsResponse = await api.get("/api/finance/transactions");
         const totalTransactions = transactionsResponse.data.length || 0;
 
         setStats({
@@ -70,7 +70,7 @@ const AdminDashboard: React.FC = () => {
         });
       } else if (hasFinance) {
         // Only finance
-        const transactionsResponse = await api.get("/api/admin/transactions");
+        const transactionsResponse = await api.get("/api/finance/transactions");
         const totalTransactions = transactionsResponse.data.length || 0;
         setStats({
           totalRegistrations: 0,
@@ -81,7 +81,7 @@ const AdminDashboard: React.FC = () => {
         const registrationsResponse = await api.get("/api/admin/registrations");
         const totalRegistrations = registrationsResponse.data.length || 0;
 
-        const transactionsResponse = await api.get("/api/admin/transactions");
+        const transactionsResponse = await api.get("/api/finance/transactions");
         const totalTransactions = transactionsResponse.data.length || 0;
 
         setStats({
