@@ -78,29 +78,9 @@ export interface User {
   id: number;
   username: string;
   full_name: string;
-  roles?: ("registration" | "finance")[];
+  roles?: ("registration")[];
 }
 
-export interface Transaction {
-  id: number;
-  created_at: string;
-  updated_at: string;
-  type: "income" | "expense";
-  amount: number;
-  description: string;
-  date: string;
-  category: string;
-  user_id: number;
-  user?: User;
-}
-
-export interface TransactionRequest {
-  type: "income" | "expense";
-  amount: number;
-  description: string;
-  date: string;
-  category: string;
-}
 
 export interface ActivityLog {
   id: number;
@@ -145,28 +125,8 @@ export interface Summary {
     chanted_manat: number;
     chanted_ok_apan: number;
   };
-  transactions: {
-    total_income: number;
-    total_expense: number;
-    balance: number;
-    income_this_month: number;
-    expense_this_month: number;
-    balance_this_month: number;
-  };
   logs: {
     activity_logs: number;
     device_logs: number;
   };
-}
-
-export interface FinanceSummary {
-  total_income: number;
-  total_expense: number;
-  balance: number;
-  income_this_month: number;
-  expense_this_month: number;
-  balance_this_month: number;
-  total_transactions: number;
-  income_count: number;
-  expense_count: number;
 }
