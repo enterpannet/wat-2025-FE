@@ -321,10 +321,10 @@ const FinanceTransactionForm: React.FC = () => {
     }
 
     try {
-      const canvas = document.createElement("canvas");
+      let canvas = document.createElement("canvas");
       canvas.width = videoWidth;
       canvas.height = videoHeight;
-      const ctx = canvas.getContext("2d");
+      let ctx = canvas.getContext("2d");
       
       if (!ctx) {
         setError("ไม่สามารถสร้าง canvas ได้");
@@ -356,20 +356,10 @@ const FinanceTransactionForm: React.FC = () => {
         if (resizedCtx) {
           resizedCtx.imageSmoothingEnabled = true;
           resizedCtx.imageSmoothingQuality = "high";
-          // Draw the mirrored image to resized canvas
-          resizedCtx.save();
-          resizedCtx.scale(-1, 1);
-          resizedCtx.drawImage(canvas, -finalWidth, 0, finalWidth, finalHeight);
-          resizedCtx.restore();
-          
-          // Replace canvas with resized version
-          canvas.width = finalWidth;
-          canvas.height = finalHeight;
-          const newCtx = canvas.getContext("2d");
-          if (newCtx) {
-            newCtx.drawImage(resizedCanvas, 0, 0);
-            ctx = newCtx;
-          }
+          // Draw the original canvas to resized canvas
+          resizedCtx.drawImage(canvas, 0, 0, finalWidth, finalHeight);
+          // Use the resized canvas
+          canvas = resizedCanvas;
         }
       }
 
