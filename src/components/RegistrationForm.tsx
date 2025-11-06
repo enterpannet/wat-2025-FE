@@ -1,5 +1,5 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import axios, { AxiosError } from "axios";
+import api, { AxiosError } from "../api";
 import {
   Province,
   District,
@@ -66,32 +66,53 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
 
   const fetchProvinces = async (): Promise<void> => {
     try {
-      const response = await axios.get<Province[]>("/api/public/provinces");
-      setProvinces(response.data);
+      const response = await api.get<Province[]>("/api/public/provinces");
+      // Ensure response.data is an array
+      if (Array.isArray(response.data)) {
+        setProvinces(response.data);
+      } else {
+        console.error("Invalid provinces data:", response.data);
+        setProvinces([]);
+      }
     } catch (err) {
       console.error("Error fetching provinces:", err);
+      setProvinces([]); // Ensure it's always an array
     }
   };
 
   const fetchDistricts = async (provinceId: string): Promise<void> => {
     try {
-      const response = await axios.get<District[]>(
+      const response = await api.get<District[]>(
         `/api/public/provinces/${provinceId}/districts`,
       );
-      setDistricts(response.data);
+      // Ensure response.data is an array
+      if (Array.isArray(response.data)) {
+        setDistricts(response.data);
+      } else {
+        console.error("Invalid districts data:", response.data);
+        setDistricts([]);
+      }
     } catch (err) {
       console.error("Error fetching districts:", err);
+      setDistricts([]); // Ensure it's always an array
     }
   };
 
   const fetchSubDistricts = async (districtId: string): Promise<void> => {
     try {
-      const response = await axios.get<SubDistrict[]>(
+      const response = await api.get<SubDistrict[]>(
         `/api/public/districts/${districtId}/sub-districts`,
       );
-      setSubDistricts(response.data);
+      // Ensure response.data is an array
+      if (Array.isArray(response.data)) {
+        setSubDistricts(response.data);
+      } else {
+        console.error("Invalid sub-districts data:", response.data);
+        setSubDistricts([]);
+      }
     } catch (err) {
       console.error("Error fetching sub-districts:", err);
+      setSubDistricts([]); // Ensure it's always an array
     }
   };
 
@@ -124,7 +145,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
         vassa: formData.vassa ? parseInt(formData.vassa) : 0,
       };
 
-      await axios.post("/api/public/registrations", submitData);
+      await api.post("/api/public/registrations", submitData);
       setSuccess(true);
 
       setFormData({
@@ -165,7 +186,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">ระบบลงทะเบียน</h1>
-            <p className="text-gray-600 text-sm">สำหรับประชาชนทั่วไป</p>
+           
           </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">

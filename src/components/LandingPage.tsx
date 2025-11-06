@@ -40,7 +40,7 @@ const LandingPage: React.FC = () => {
                 แบบฟอร์มลงทะเบียน
               </h3>
               <p className="text-gray-600 mb-6 text-center">
-                สำหรับประชาชนทั่วไปที่ต้องการลงทะเบียนข้อมูลส่วนตัว
+             
               </p>
               <div className="flex flex-wrap gap-2 justify-center mb-6">
                 <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
