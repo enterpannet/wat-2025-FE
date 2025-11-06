@@ -165,6 +165,26 @@ const ListTum: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id: number, fullName: string): Promise<void> => {
+    if (!window.confirm(`คุณต้องการลบข้อมูลของ ${fullName} ใช่หรือไม่?`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/api/admin/registrations/${id}`);
+      // Remove from local state
+      setRegistrations((prevRegistrations) =>
+        prevRegistrations.filter((reg) => reg.id !== id)
+      );
+      alert("ลบข้อมูลสำเร็จ");
+    } catch (err) {
+      const axiosError = err as AxiosError<ErrorResponse>;
+      alert(
+        axiosError.response?.data?.error || "ไม่สามารถลบข้อมูลได้"
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -281,6 +301,9 @@ const ListTum: React.FC = () => {
                           {chantingStats.okApanCount} / {chantingStats.total}
                         </div>
                       </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider bg-red-700">
+                        จัดการ
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -368,6 +391,18 @@ const ListTum: React.FC = () => {
                             }
                             className="w-5 h-5 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
                           />
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(registration.id, registration.full_name);
+                            }}
+                            className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
+                            title="ลบข้อมูล"
+                          >
+                            🗑️ ลบ
+                          </button>
                         </td>
                       </tr>
                     ))}
