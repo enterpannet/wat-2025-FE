@@ -3,6 +3,7 @@ import api, { AxiosError } from "../../api";
 import FinanceNavbar from "./FinanceNavbar";
 import AlertModal from "../common/AlertModal";
 import Modal from "../common/Modal";
+import ConfirmModal from "../common/ConfirmModal";
 import {
   FinanceTransaction,
   FinanceTransactionRequest,
@@ -31,6 +32,15 @@ const FinanceDashboard: React.FC = () => {
     isOpen: false,
     message: "",
     type: "info",
+  });
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    message: "",
+    onConfirm: () => {},
   });
 
   const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "info") => {
@@ -81,19 +91,22 @@ const FinanceDashboard: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) {
-      return;
-    }
-
-    try {
-      await api.delete(`/api/finance/transactions/${id}`);
-      fetchTransactions();
-      fetchSummary();
-    } catch (err) {
-      const axiosError = err as AxiosError;
-      showAlert((axiosError.response?.data as { error?: string })?.error || "ไม่สามารถลบข้อมูลได้", "error");
-    }
+  const handleDelete = (id: number): void => {
+    setConfirmModal({
+      isOpen: true,
+      message: "คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?",
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/finance/transactions/${id}`);
+          fetchTransactions();
+          fetchSummary();
+          showAlert("ลบข้อมูลสำเร็จ", "success");
+        } catch (err) {
+          const axiosError = err as AxiosError;
+          showAlert((axiosError.response?.data as { error?: string })?.error || "ไม่สามารถลบข้อมูลได้", "error");
+        }
+      },
+    });
   };
 
   const formatMoney = (amount: number): string => {
@@ -421,6 +434,17 @@ const FinanceDashboard: React.FC = () => {
           onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
           message={alertModal.message}
           type={alertModal.type}
+        />
+
+        {/* Confirm Modal */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+          onConfirm={confirmModal.onConfirm}
+          message={confirmModal.message}
+          type="danger"
+          confirmText="ลบ"
+          cancelText="ยกเลิก"
         />
       </div>
     </div>

@@ -5,6 +5,7 @@ import { Registration, Province, District, SubDistrict } from "../../types";
 import AdminNavbar from "./AdminNavbar";
 import AlertModal from "../common/AlertModal";
 import Modal from "../common/Modal";
+import ConfirmModal from "../common/ConfirmModal";
 
 interface ErrorResponse {
   error: string;
@@ -38,6 +39,16 @@ const RegistrationDashboard: React.FC = () => {
     isOpen: false,
     message: "",
     type: "info",
+  });
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+    fullName?: string;
+  }>({
+    isOpen: false,
+    message: "",
+    onConfirm: () => {},
   });
 
   useEffect(() => {
@@ -127,19 +138,22 @@ const RegistrationDashboard: React.FC = () => {
     setAlertModal({ isOpen: true, message, type });
   };
 
-  const handleDelete = async (id: number, fullName: string): Promise<void> => {
-    if (!window.confirm(`คุณต้องการลบข้อมูลของ ${fullName} ใช่หรือไม่?`)) {
-      return;
-    }
-
-    try {
-      await api.delete(`/api/admin/registrations/${id}`);
-      setRegistrations((prev) => prev.filter((reg) => reg.id !== id));
-      showAlert("ลบข้อมูลสำเร็จ", "success");
-    } catch (err) {
-      const axiosError = err as AxiosError<ErrorResponse>;
-      showAlert(axiosError.response?.data?.error || "ไม่สามารถลบข้อมูลได้", "error");
-    }
+  const handleDelete = (id: number, fullName: string): void => {
+    setConfirmModal({
+      isOpen: true,
+      message: `คุณต้องการลบข้อมูลของ ${fullName} ใช่หรือไม่?`,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/admin/registrations/${id}`);
+          setRegistrations((prev) => prev.filter((reg) => reg.id !== id));
+          showAlert("ลบข้อมูลสำเร็จ", "success");
+        } catch (err) {
+          const axiosError = err as AxiosError<ErrorResponse>;
+          showAlert(axiosError.response?.data?.error || "ไม่สามารถลบข้อมูลได้", "error");
+        }
+      },
+      fullName,
+    });
   };
 
   // Format date from ค.ศ. (YYYY-MM-DD) to พ.ศ. (DD/MM/YYYY)
@@ -789,6 +803,17 @@ const RegistrationDashboard: React.FC = () => {
         onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
         message={alertModal.message}
         type={alertModal.type}
+      />
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        message={confirmModal.message}
+        type="danger"
+        confirmText="ลบ"
+        cancelText="ยกเลิก"
       />
     </div>
   );

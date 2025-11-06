@@ -54,6 +54,14 @@ const FinanceNavbar: React.FC = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-1">
+            {/* Back to System Selection */}
+            <button
+              onClick={() => navigate("/admin/select")}
+              className="px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 text-white hover:bg-green-700 hover:shadow-md"
+            >
+              🔄 เลือกระบบ
+            </button>
+
             {/* Finance Dashboard */}
             <NavLink
               to="/finance"
@@ -108,6 +116,17 @@ const FinanceNavbar: React.FC = () => {
                 <p className="text-lg font-bold text-white">{user.full_name}</p>
               </div>
             )}
+            
+            {/* Back to System Selection */}
+            <button
+              onClick={() => {
+                navigate("/admin/select");
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full px-5 py-3.5 rounded-xl font-bold text-base transition-all duration-200 text-white bg-green-700/20 hover:bg-green-700/40 backdrop-blur-sm mb-2"
+            >
+              🔄 เลือกระบบ
+            </button>
             
             {/* Mobile Finance */}
             <NavLink
