@@ -10,6 +10,7 @@ import ActivityLogPage from "./components/admin/ActivityLog";
 import DeviceLog from "./components/DeviceLog";
 import UserManagement from "./components/admin/UserManagement";
 import SystemSelection from "./components/admin/SystemSelection";
+import FinanceDashboard from "./components/finance/FinanceDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
