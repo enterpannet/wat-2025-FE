@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import api, { AxiosError } from "../../api";
-import AdminNavbar from "./AdminNavbar";
+import FinanceNavbar from "./FinanceNavbar";
 import {
   FinanceTransaction,
   FinanceTransactionRequest,
@@ -9,7 +8,6 @@ import {
 } from "../../types";
 
 const FinanceDashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,8 +98,8 @@ const FinanceDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-gray-100">
-      <AdminNavbar />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-gray-100">
+      <FinanceNavbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -144,7 +142,7 @@ const FinanceDashboard: React.FC = () => {
                 {formatMoney(summary.summary.net_amount)}
               </div>
             </div>
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-6 text-white shadow-xl">
               <div className="text-sm font-medium opacity-90">รายการทั้งหมด</div>
               <div className="text-3xl font-bold mt-2">
                 {summary.summary.income_count + summary.summary.expense_count}
@@ -166,7 +164,7 @@ const FinanceDashboard: React.FC = () => {
                 onChange={(e) =>
                   setFilters({ ...filters, type: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="">ทั้งหมด</option>
                 <option value="income">รายรับ</option>
@@ -184,7 +182,7 @@ const FinanceDashboard: React.FC = () => {
                   setFilters({ ...filters, category: e.target.value })
                 }
                 placeholder="กรอกหมวดหมู่"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -197,7 +195,7 @@ const FinanceDashboard: React.FC = () => {
                 onChange={(e) =>
                   setFilters({ ...filters, start_date: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -210,7 +208,7 @@ const FinanceDashboard: React.FC = () => {
                 onChange={(e) =>
                   setFilters({ ...filters, end_date: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -231,7 +229,7 @@ const FinanceDashboard: React.FC = () => {
               setEditingTransaction(null);
               setShowForm(true);
             }}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-purple-900 transition-all shadow-lg hover:shadow-xl"
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-800 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-900 transition-all shadow-lg hover:shadow-xl"
           >
             ➕ เพิ่มรายการใหม่
           </button>
@@ -247,7 +245,7 @@ const FinanceDashboard: React.FC = () => {
         {/* Transactions Table */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
             <p className="mt-4 text-gray-600">กำลังโหลดข้อมูล...</p>
           </div>
         ) : transactions.length === 0 ? (
@@ -258,7 +256,7 @@ const FinanceDashboard: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-purple-600 to-purple-800">
+                <thead className="bg-gradient-to-r from-green-600 to-green-800">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       วันที่
@@ -433,7 +431,7 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
                 })
               }
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="income">รายรับ</option>
               <option value="expense">รายจ่าย</option>
@@ -453,7 +451,7 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
                 setFormData({ ...formData, amount: parseFloat(e.target.value) })
               }
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="0.00"
             />
           </div>
@@ -469,7 +467,7 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
               }
               required
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="กรอกรายละเอียด"
             />
           </div>
@@ -485,7 +483,7 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
                 setFormData({ ...formData, date: e.target.value })
               }
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
 
@@ -499,7 +497,7 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, category: e.target.value })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="เช่น บุญบารมี, ค่าใช้จ่ายทั่วไป"
             />
           </div>
@@ -508,7 +506,7 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-900 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-800 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-green-900 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "กำลังบันทึก..." : "บันทึก"}
             </button>

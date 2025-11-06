@@ -34,8 +34,6 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
   };
 
   const hasRegistrationRole = !user?.roles || user.roles.includes("registration");
-  // Finance accessible to all logged in users (using same login)
-  const hasFinanceAccess = true; // All logged in users can access finance
 
   return (
     <nav className="bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 shadow-2xl">
@@ -157,22 +155,6 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
               </div>
             )}
 
-            {/* Finance Link - Available to all logged in users */}
-            {hasFinanceAccess && (
-              <NavLink
-                to="/finance"
-                className={({ isActive }) =>
-                  `px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
-                    isActive
-                      ? "bg-white text-purple-700 shadow-lg scale-105"
-                      : "text-white hover:bg-purple-700 hover:shadow-md"
-                  }`
-                }
-              >
-                💰 รายรับรายจ่าย
-              </NavLink>
-            )}
-
             {/* Logout Button */}
             <button
               onClick={handleLogout}
@@ -290,23 +272,6 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                   📋 บันทึกกิจกรรม
                 </NavLink>
               </div>
-            )}
-
-            {/* Mobile Finance Section - Available to all logged in users */}
-            {hasFinanceAccess && (
-              <NavLink
-                to="/finance"
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  `block px-5 py-3.5 rounded-xl font-bold text-base transition-all duration-200 ${
-                    isActive
-                      ? "bg-white text-purple-700 shadow-xl"
-                      : "text-white bg-purple-700/20 hover:bg-purple-700/40 backdrop-blur-sm"
-                  }`
-                }
-              >
-                💰 รายรับรายจ่าย
-              </NavLink>
             )}
 
             {/* Mobile Logout */}
