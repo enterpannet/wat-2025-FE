@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import api, { AxiosError } from "../../api";
 import { Registration, Province, District, SubDistrict } from "../../types";
 import AdminNavbar from "./AdminNavbar";
+import AlertModal from "../common/AlertModal";
+import Modal from "../common/Modal";
 
 interface ErrorResponse {
   error: string;
@@ -28,6 +30,15 @@ const RegistrationDashboard: React.FC = () => {
   const [subDistricts, setSubDistricts] = useState<SubDistrict[]>([]);
   const [provinceSearch, setProvinceSearch] = useState<string>("");
   const [showProvinceDropdown, setShowProvinceDropdown] = useState<boolean>(false);
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  }>({
+    isOpen: false,
+    message: "",
+    type: "info",
+  });
 
   useEffect(() => {
     checkAuth();
@@ -112,6 +123,10 @@ const RegistrationDashboard: React.FC = () => {
     }
   };
 
+  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "info") => {
+    setAlertModal({ isOpen: true, message, type });
+  };
+
   const handleDelete = async (id: number, fullName: string): Promise<void> => {
     if (!window.confirm(`คุณต้องการลบข้อมูลของ ${fullName} ใช่หรือไม่?`)) {
       return;
@@ -120,10 +135,10 @@ const RegistrationDashboard: React.FC = () => {
     try {
       await api.delete(`/api/admin/registrations/${id}`);
       setRegistrations((prev) => prev.filter((reg) => reg.id !== id));
-      alert("ลบข้อมูลสำเร็จ");
+      showAlert("ลบข้อมูลสำเร็จ", "success");
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
-      alert(axiosError.response?.data?.error || "ไม่สามารถลบข้อมูลได้");
+      showAlert(axiosError.response?.data?.error || "ไม่สามารถลบข้อมูลได้", "error");
     }
   };
 
@@ -256,12 +271,12 @@ const RegistrationDashboard: React.FC = () => {
     try {
       // Validate required fields
       if (!editFormData.full_name || !editFormData.phone_number || !editFormData.address_detail) {
-        alert("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
+        showAlert("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน", "warning");
         return;
       }
 
       if (!editFormData.province_id || !editFormData.district_id || !editFormData.sub_district_id) {
-        alert("กรุณาเลือกจังหวัด อำเภอ และตำบล");
+        showAlert("กรุณาเลือกจังหวัด อำเภอ และตำบล", "warning");
         return;
       }
 
@@ -269,7 +284,7 @@ const RegistrationDashboard: React.FC = () => {
       const ceBirthDate = parseBEDateToCE(editFormData.birth_date as string);
       
       if (!ceBirthDate) {
-        alert("รูปแบบวันเกิดไม่ถูกต้อง กรุณาใช้รูปแบบ DD/MM/YYYY (เช่น 15/03/2545)");
+        showAlert("รูปแบบวันเกิดไม่ถูกต้อง กรุณาใช้รูปแบบ DD/MM/YYYY (เช่น 15/03/2545)", "warning");
         return;
       }
       
@@ -291,22 +306,22 @@ const RegistrationDashboard: React.FC = () => {
 
       // Validate IDs are valid numbers (greater than 0)
       if (!updateData.province_id || updateData.province_id === 0 || isNaN(updateData.province_id)) {
-        alert("กรุณาเลือกจังหวัด");
+        showAlert("กรุณาเลือกจังหวัด", "warning");
         return;
       }
       if (!updateData.district_id || updateData.district_id === 0 || isNaN(updateData.district_id)) {
-        alert("กรุณาเลือกอำเภอ");
+        showAlert("กรุณาเลือกอำเภอ", "warning");
         return;
       }
       if (!updateData.sub_district_id || updateData.sub_district_id === 0 || isNaN(updateData.sub_district_id)) {
-        alert("กรุณาเลือกตำบล");
+        showAlert("กรุณาเลือกตำบล", "warning");
         return;
       }
 
       // Validate birth_date format
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(updateData.birth_date)) {
-        alert(`รูปแบบวันเกิดไม่ถูกต้อง: ${updateData.birth_date}. ควรเป็น YYYY-MM-DD`);
+        showAlert(`รูปแบบวันเกิดไม่ถูกต้อง: ${updateData.birth_date}. ควรเป็น YYYY-MM-DD`, "warning");
         return;
       }
 
@@ -320,12 +335,12 @@ const RegistrationDashboard: React.FC = () => {
       await api.put(`/api/admin/registrations/${editingId}`, updateData);
       await fetchRegistrations();
       handleCancelEdit();
-      alert("บันทึกข้อมูลสำเร็จ");
+      showAlert("บันทึกข้อมูลสำเร็จ", "success");
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
       const errorMessage = axiosError.response?.data?.error || axiosError.message || "ไม่สามารถบันทึกข้อมูลได้";
       console.error("Update error:", axiosError.response?.data);
-      alert(errorMessage);
+      showAlert(errorMessage, "error");
     }
   };
 
@@ -504,36 +519,19 @@ const RegistrationDashboard: React.FC = () => {
       </div>
 
       {/* Edit Modal */}
-      {showEditModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              handleCancelEdit();
-            }
+      <Modal
+        isOpen={showEditModal}
+        onClose={handleCancelEdit}
+        title="แก้ไขข้อมูลผู้ลงทะเบียน"
+        size="xl"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSaveEdit();
           }}
+          className="space-y-6"
         >
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 rounded-t-xl">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">แก้ไขข้อมูลผู้ลงทะเบียน</h2>
-                <button
-                  onClick={handleCancelEdit}
-                  className="text-white hover:text-gray-200 text-2xl font-bold"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSaveEdit();
-                }}
-                className="space-y-6"
-              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* ชื่อ-นามสกุล */}
                   <div>
@@ -770,10 +768,15 @@ const RegistrationDashboard: React.FC = () => {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
     </div>
   );
 };

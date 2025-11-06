@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import api, { AxiosError } from "../../api";
 import FinanceNavbar from "./FinanceNavbar";
+import AlertModal from "../common/AlertModal";
+import Modal from "../common/Modal";
 import {
   FinanceTransaction,
   FinanceTransactionRequest,
@@ -21,6 +23,19 @@ const FinanceDashboard: React.FC = () => {
     start_date: "",
     end_date: "",
   });
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  }>({
+    isOpen: false,
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "info") => {
+    setAlertModal({ isOpen: true, message, type });
+  };
 
   useEffect(() => {
     fetchTransactions();
@@ -77,7 +92,7 @@ const FinanceDashboard: React.FC = () => {
       fetchSummary();
     } catch (err) {
       const axiosError = err as AxiosError;
-      alert((axiosError.response?.data as { error?: string })?.error || "ไม่สามารถลบข้อมูลได้");
+      showAlert((axiosError.response?.data as { error?: string })?.error || "ไม่สามารถลบข้อมูลได้", "error");
     }
   };
 
@@ -399,6 +414,14 @@ const FinanceDashboard: React.FC = () => {
             }}
           />
         )}
+
+        {/* Alert Modal */}
+        <AlertModal
+          isOpen={alertModal.isOpen}
+          onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+          message={alertModal.message}
+          type={alertModal.type}
+        />
       </div>
     </div>
   );
@@ -439,6 +462,13 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
     setError("");
 
     try {
+      // Validate amount
+      if (!formData.amount || isNaN(formData.amount) || formData.amount <= 0) {
+        setError("กรุณากรอกจำนวนเงินที่ถูกต้อง");
+        setLoading(false);
+        return;
+      }
+
       // Prepare request data
       const requestData: FinanceTransactionRequest = {
         type: formData.type,
@@ -535,14 +565,13 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {transaction ? "แก้ไขรายการ" : "เพิ่มรายการใหม่"}
-          </h2>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={transaction ? "แก้ไขรายการ" : "เพิ่มรายการใหม่"}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
               {error}
@@ -577,10 +606,15 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
               type="number"
               step="0.01"
               min="0.01"
-              value={formData.amount}
-              onChange={(e) =>
-                setFormData({ ...formData, amount: parseFloat(e.target.value) })
-              }
+              value={isNaN(formData.amount) ? "" : formData.amount}
+              onChange={(e) => {
+                const value = e.target.value;
+                const numValue = value === "" ? 0 : parseFloat(value);
+                setFormData({ 
+                  ...formData, 
+                  amount: isNaN(numValue) ? 0 : numValue 
+                });
+              }}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="0.00"
@@ -730,10 +764,9 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-};
-
+      </Modal>
+    );
+  };
+  
 export default FinanceDashboard;
 

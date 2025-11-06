@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api, { AxiosError } from "../../api";
 import { Registration } from "../../types";
 import AdminNavbar from "./AdminNavbar";
+import AlertModal from "../common/AlertModal";
 
 interface ErrorResponse {
   error: string;
@@ -25,6 +26,19 @@ const ListTum: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  }>({
+    isOpen: false,
+    message: "",
+    type: "info",
+  });
+
+  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "info") => {
+    setAlertModal({ isOpen: true, message, type });
+  };
 
   useEffect(() => {
     checkAuth();
@@ -96,7 +110,7 @@ const ListTum: React.FC = () => {
         ),
       );
     } catch (err) {
-      alert("ไม่สามารถอัพเดทสถานะได้");
+      showAlert("ไม่สามารถอัพเดทสถานะได้", "error");
     }
   };
 
@@ -378,6 +392,14 @@ const ListTum: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
     </div>
   );
 };
