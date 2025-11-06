@@ -28,6 +28,81 @@ const FinanceTransactionForm: React.FC = () => {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraVideoRef, setCameraVideoRef] = useState<HTMLVideoElement | null>(null);
 
+  // Function to resize and compress image
+  const resizeAndCompressImage = async (
+    file: File,
+    maxWidth: number = 1920,
+    maxHeight: number = 1920,
+    quality: number = 0.85
+  ): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // Calculate new dimensions
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = width * ratio;
+            height = height * ratio;
+          }
+
+          // Create canvas
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+
+          if (!ctx) {
+            reject(new Error("ไม่สามารถสร้าง canvas ได้"));
+            return;
+          }
+
+          // Draw image with better quality
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to blob
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("ไม่สามารถแปลงภาพได้"));
+                return;
+              }
+
+              // Create new File with compressed data
+              const compressedFile = new File(
+                [blob],
+                file.name,
+                {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                }
+              );
+
+              // If compressed file is larger than original, use original
+              if (compressedFile.size > file.size) {
+                resolve(file);
+              } else {
+                resolve(compressedFile);
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => reject(new Error("ไม่สามารถโหลดภาพได้"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("ไม่สามารถอ่านไฟล์ได้"));
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Load transaction data if editing
   useEffect(() => {
     if (isEdit && id) {
@@ -125,25 +200,47 @@ const FinanceTransactionForm: React.FC = () => {
     setUploadingImage(true);
     setError("");
 
-    // Upload all files
-    const uploadPromises = Array.from(files).map(async (file) => {
-      const formDataUpload = new FormData();
-      formDataUpload.append("image", file);
-
-      const response = await api.post<{ success: boolean; image_url: string }>(
-        "/api/finance/upload-image",
-        formDataUpload,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      return response.data.image_url;
-    });
-
     try {
+      // Upload all files with compression
+      const uploadPromises = Array.from(files).map(async (file) => {
+        try {
+          // Resize and compress image before upload
+          const compressedFile = await resizeAndCompressImage(file, 1920, 1920, 0.85);
+          
+          const formDataUpload = new FormData();
+          formDataUpload.append("image", compressedFile);
+
+          const response = await api.post<{ success: boolean; image_url: string }>(
+            "/api/finance/upload-image",
+            formDataUpload,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          return response.data.image_url;
+        } catch (err) {
+          console.error("Error processing image:", err);
+          // Fallback: try uploading original file
+          const formDataUpload = new FormData();
+          formDataUpload.append("image", file);
+
+          const response = await api.post<{ success: boolean; image_url: string }>(
+            "/api/finance/upload-image",
+            formDataUpload,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          return response.data.image_url;
+        }
+      });
+
       const uploadedUrls = await Promise.all(uploadPromises);
       const newImageUrls = [...(formData.image_urls || []), ...uploadedUrls];
       setFormData({ ...formData, image_urls: newImageUrls });
@@ -240,12 +337,48 @@ const FinanceTransactionForm: React.FC = () => {
       ctx.drawImage(cameraVideoRef, -videoWidth, 0, videoWidth, videoHeight);
       ctx.restore();
 
-      // แปลง canvas เป็น blob
+      // Resize if too large (max 1920x1920)
+      let finalWidth = videoWidth;
+      let finalHeight = videoHeight;
+      const maxDimension = 1920;
+      
+      if (finalWidth > maxDimension || finalHeight > maxDimension) {
+        const ratio = Math.min(maxDimension / finalWidth, maxDimension / finalHeight);
+        finalWidth = Math.floor(finalWidth * ratio);
+        finalHeight = Math.floor(finalHeight * ratio);
+        
+        // Create new canvas with resized dimensions
+        const resizedCanvas = document.createElement("canvas");
+        resizedCanvas.width = finalWidth;
+        resizedCanvas.height = finalHeight;
+        const resizedCtx = resizedCanvas.getContext("2d");
+        
+        if (resizedCtx) {
+          resizedCtx.imageSmoothingEnabled = true;
+          resizedCtx.imageSmoothingQuality = "high";
+          // Draw the mirrored image to resized canvas
+          resizedCtx.save();
+          resizedCtx.scale(-1, 1);
+          resizedCtx.drawImage(canvas, -finalWidth, 0, finalWidth, finalHeight);
+          resizedCtx.restore();
+          
+          // Replace canvas with resized version
+          canvas.width = finalWidth;
+          canvas.height = finalHeight;
+          const newCtx = canvas.getContext("2d");
+          if (newCtx) {
+            newCtx.drawImage(resizedCanvas, 0, 0);
+            ctx = newCtx;
+          }
+        }
+      }
+
+      // แปลง canvas เป็น blob with compression
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(
           (blob) => resolve(blob),
           "image/jpeg",
-          0.9 // quality
+          0.85 // quality (reduced from 0.9 for better compression)
         );
       });
 
