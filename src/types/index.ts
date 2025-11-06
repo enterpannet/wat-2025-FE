@@ -130,3 +130,41 @@ export interface Summary {
     device_logs: number;
   };
 }
+
+// Finance Types
+export interface FinanceTransaction {
+  id: number;
+  created_at: string;
+  updated_at: string;
+  type: "income" | "expense";
+  amount: number;
+  description: string;
+  date: string;
+  category: string;
+  user_id: number;
+  user?: User;
+}
+
+export interface FinanceTransactionRequest {
+  type: "income" | "expense";
+  amount: number;
+  description: string;
+  date: string;
+  category: string;
+}
+
+export interface FinanceSummary {
+  summary: {
+    total_income: number;
+    total_expense: number;
+    net_amount: number;
+    income_count: number;
+    expense_count: number;
+  };
+  categories: Array<{
+    category: string;
+    type: "income" | "expense";
+    total: number;
+    count: number;
+  }>;
+}

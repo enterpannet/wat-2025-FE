@@ -9,6 +9,7 @@ import ListTum from "./components/admin/ListTum";
 import ActivityLogPage from "./components/admin/ActivityLog";
 import DeviceLog from "./components/DeviceLog";
 import UserManagement from "./components/admin/UserManagement";
+import FinanceDashboard from "./components/finance/FinanceDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -86,6 +87,16 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["registration"]}>
               <ActivityLogPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Finance Routes - ระบบรายรับรายจ่าย (แยกออกมา) */}
+        <Route
+          path="/finance"
+          element={
+            <ProtectedRoute>
+              <FinanceDashboard />
             </ProtectedRoute>
           }
         />

@@ -1,0 +1,530 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import api, { AxiosError } from "../../api";
+import AdminNavbar from "./AdminNavbar";
+import {
+  FinanceTransaction,
+  FinanceTransactionRequest,
+  FinanceSummary,
+} from "../../types";
+
+const FinanceDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
+  const [summary, setSummary] = useState<FinanceSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingTransaction, setEditingTransaction] =
+    useState<FinanceTransaction | null>(null);
+  const [filters, setFilters] = useState({
+    type: "",
+    category: "",
+    start_date: "",
+    end_date: "",
+  });
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchSummary();
+  }, [filters]);
+
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filters.type) params.append("type", filters.type);
+      if (filters.category) params.append("category", filters.category);
+      if (filters.start_date) params.append("start_date", filters.start_date);
+      if (filters.end_date) params.append("end_date", filters.end_date);
+
+      const response = await api.get<FinanceTransaction[]>(
+        `/api/finance/transactions?${params.toString()}`
+      );
+      setTransactions(response.data);
+      setError("");
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      setError(
+        axiosError.response?.data?.error || "ไม่สามารถดึงข้อมูลได้"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSummary = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filters.start_date) params.append("start_date", filters.start_date);
+      if (filters.end_date) params.append("end_date", filters.end_date);
+
+      const response = await api.get<FinanceSummary>(
+        `/api/finance/summary?${params.toString()}`
+      );
+      setSummary(response.data);
+    } catch (err) {
+      console.error("Failed to fetch summary:", err);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) {
+      return;
+    }
+
+    try {
+      await api.delete(`/api/finance/transactions/${id}`);
+      fetchTransactions();
+      fetchSummary();
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      alert(axiosError.response?.data?.error || "ไม่สามารถลบข้อมูลได้");
+    }
+  };
+
+  const formatMoney = (amount: number): string => {
+    return new Intl.NumberFormat("th-TH", {
+      style: "currency",
+      currency: "THB",
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-gray-100">
+      <AdminNavbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            💰 ระบบรายรับรายจ่าย
+          </h1>
+          <p className="text-gray-600">จัดการรายรับและรายจ่ายทั้งหมด</p>
+        </div>
+
+        {/* Summary Cards */}
+        {summary && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl">
+              <div className="text-sm font-medium opacity-90">รายรับทั้งหมด</div>
+              <div className="text-3xl font-bold mt-2">
+                {formatMoney(summary.summary.total_income)}
+              </div>
+              <div className="text-sm mt-2 opacity-75">
+                {summary.summary.income_count} รายการ
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-xl">
+              <div className="text-sm font-medium opacity-90">รายจ่ายทั้งหมด</div>
+              <div className="text-3xl font-bold mt-2">
+                {formatMoney(summary.summary.total_expense)}
+              </div>
+              <div className="text-sm mt-2 opacity-75">
+                {summary.summary.expense_count} รายการ
+              </div>
+            </div>
+            <div
+              className={`rounded-2xl p-6 text-white shadow-xl ${
+                summary.summary.net_amount >= 0
+                  ? "bg-gradient-to-br from-blue-500 to-blue-600"
+                  : "bg-gradient-to-br from-orange-500 to-orange-600"
+              }`}
+            >
+              <div className="text-sm font-medium opacity-90">ยอดคงเหลือ</div>
+              <div className="text-3xl font-bold mt-2">
+                {formatMoney(summary.summary.net_amount)}
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+              <div className="text-sm font-medium opacity-90">รายการทั้งหมด</div>
+              <div className="text-3xl font-bold mt-2">
+                {summary.summary.income_count + summary.summary.expense_count}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">🔍 กรองข้อมูล</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ประเภท
+              </label>
+              <select
+                value={filters.type}
+                onChange={(e) =>
+                  setFilters({ ...filters, type: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">ทั้งหมด</option>
+                <option value="income">รายรับ</option>
+                <option value="expense">รายจ่าย</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                หมวดหมู่
+              </label>
+              <input
+                type="text"
+                value={filters.category}
+                onChange={(e) =>
+                  setFilters({ ...filters, category: e.target.value })
+                }
+                placeholder="กรอกหมวดหมู่"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                วันที่เริ่มต้น
+              </label>
+              <input
+                type="date"
+                value={filters.start_date}
+                onChange={(e) =>
+                  setFilters({ ...filters, start_date: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                วันที่สิ้นสุด
+              </label>
+              <input
+                type="date"
+                value={filters.end_date}
+                onChange={(e) =>
+                  setFilters({ ...filters, end_date: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          <button
+            onClick={() =>
+              setFilters({ type: "", category: "", start_date: "", end_date: "" })
+            }
+            className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            ล้างตัวกรอง
+          </button>
+        </div>
+
+        {/* Add Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => {
+              setEditingTransaction(null);
+              setShowForm(true);
+            }}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-purple-900 transition-all shadow-lg hover:shadow-xl"
+          >
+            ➕ เพิ่มรายการใหม่
+          </button>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {/* Transactions Table */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            <p className="mt-4 text-gray-600">กำลังโหลดข้อมูล...</p>
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+            <p className="text-gray-500 text-lg">ยังไม่มีรายการ</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gradient-to-r from-purple-600 to-purple-800">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                      วันที่
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                      ประเภท
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                      รายละเอียด
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                      หมวดหมู่
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                      จำนวนเงิน
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">
+                      จัดการ
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {transactions.map((transaction) => (
+                    <tr key={transaction.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(transaction.date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            transaction.type === "income"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {transaction.type === "income" ? "รายรับ" : "รายจ่าย"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {transaction.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {transaction.category || "-"}
+                      </td>
+                      <td
+                        className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
+                          transaction.type === "income"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {transaction.type === "income" ? "+" : "-"}
+                        {formatMoney(transaction.amount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setEditingTransaction(transaction);
+                            setShowForm(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                        >
+                          ✏️ แก้ไข
+                        </button>
+                        <button
+                          onClick={() => handleDelete(transaction.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          🗑️ ลบ
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Transaction Form Modal */}
+        {showForm && (
+          <FinanceTransactionForm
+            transaction={editingTransaction}
+            onClose={() => {
+              setShowForm(false);
+              setEditingTransaction(null);
+            }}
+            onSuccess={() => {
+              setShowForm(false);
+              setEditingTransaction(null);
+              fetchTransactions();
+              fetchSummary();
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Transaction Form Component
+interface FinanceTransactionFormProps {
+  transaction: FinanceTransaction | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
+  transaction,
+  onClose,
+  onSuccess,
+}) => {
+  const [formData, setFormData] = useState<FinanceTransactionRequest>({
+    type: transaction?.type || "income",
+    amount: transaction?.amount || 0,
+    description: transaction?.description || "",
+    date: transaction?.date
+      ? new Date(transaction.date).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0],
+    category: transaction?.category || "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      if (transaction) {
+        await api.put(`/api/finance/transactions/${transaction.id}`, formData);
+      } else {
+        await api.post("/api/finance/transactions", formData);
+      }
+      onSuccess();
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      setError(
+        axiosError.response?.data?.error || "ไม่สามารถบันทึกข้อมูลได้"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {transaction ? "แก้ไขรายการ" : "เพิ่มรายการใหม่"}
+          </h2>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {error && (
+            <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              ประเภท <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  type: e.target.value as "income" | "expense",
+                })
+              }
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="income">รายรับ</option>
+              <option value="expense">รายจ่าย</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              จำนวนเงิน <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={formData.amount}
+              onChange={(e) =>
+                setFormData({ ...formData, amount: parseFloat(e.target.value) })
+              }
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="0.00"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              รายละเอียด <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              required
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="กรอกรายละเอียด"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              วันที่ <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) =>
+                setFormData({ ...formData, date: e.target.value })
+              }
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              หมวดหมู่
+            </label>
+            <input
+              type="text"
+              value={formData.category}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="เช่น บุญบารมี, ค่าใช้จ่ายทั่วไป"
+            />
+          </div>
+
+          <div className="flex space-x-4 pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-900 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "กำลังบันทึก..." : "บันทึก"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-all"
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default FinanceDashboard;
+
