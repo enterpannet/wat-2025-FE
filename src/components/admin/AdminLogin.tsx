@@ -28,8 +28,8 @@ const AdminLogin: React.FC = () => {
     try {
       await api.post("/api/auth/login", formData);
 
-      // Redirect to dashboard
-      navigate("/admin/dashboard");
+      // Redirect to system selection page
+      navigate("/admin/select");
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
       setError(

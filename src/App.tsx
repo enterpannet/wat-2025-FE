@@ -9,7 +9,7 @@ import ListTum from "./components/admin/ListTum";
 import ActivityLogPage from "./components/admin/ActivityLog";
 import DeviceLog from "./components/DeviceLog";
 import UserManagement from "./components/admin/UserManagement";
-import FinanceDashboard from "./components/finance/FinanceDashboard";
+import SystemSelection from "./components/admin/SystemSelection";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -24,6 +24,16 @@ function App() {
         {/* Admin Routes - Public */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/register" element={<AdminRegister />} />
+
+        {/* System Selection - After login */}
+        <Route
+          path="/admin/select"
+          element={
+            <ProtectedRoute>
+              <SystemSelection />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Admin Routes - Protected (ต้อง login ก่อน) */}
         
