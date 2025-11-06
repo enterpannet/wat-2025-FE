@@ -201,55 +201,68 @@ const FinanceTransactionForm: React.FC = () => {
     setError("");
 
     try {
-      // Upload all files with compression
-      const uploadPromises = Array.from(files).map(async (file) => {
+      // Get upload signature from backend (one signature for all files)
+      const signatureResponse = await api.get<{
+        cloud_name: string;
+        api_key: string;
+        timestamp: string;
+        signature: string;
+        folder: string;
+        upload_url: string;
+      }>("/api/finance/upload-signature");
+
+      const { upload_url, api_key, timestamp, signature, folder } = signatureResponse.data;
+
+      // Upload all files directly to Cloudinary (sequential to avoid rate limiting)
+      const uploadedUrls: string[] = [];
+      for (const file of Array.from(files)) {
         try {
           // Resize and compress image before upload
           const compressedFile = await resizeAndCompressImage(file, 1920, 1920, 0.85);
           
-          const formDataUpload = new FormData();
-          formDataUpload.append("image", compressedFile);
+          // Create FormData for Cloudinary
+          const cloudinaryFormData = new FormData();
+          cloudinaryFormData.append("file", compressedFile);
+          cloudinaryFormData.append("api_key", api_key);
+          cloudinaryFormData.append("timestamp", timestamp);
+          cloudinaryFormData.append("signature", signature);
+          cloudinaryFormData.append("folder", folder);
 
-          const response = await api.post<{ success: boolean; image_url: string }>(
-            "/api/finance/upload-image",
-            formDataUpload,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
+          // Upload directly to Cloudinary (not through backend)
+          const response = await fetch(upload_url, {
+            method: "POST",
+            body: cloudinaryFormData,
+          });
 
-          return response.data.image_url;
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || "Upload failed");
+          }
+
+          const data = await response.json();
+          if (data.secure_url) {
+            uploadedUrls.push(data.secure_url);
+          } else {
+            throw new Error("ไม่ได้รับ URL ภาพจาก Cloudinary");
+          }
         } catch (err) {
-          console.error("Error processing image:", err);
-          // Fallback: try uploading original file
-          const formDataUpload = new FormData();
-          formDataUpload.append("image", file);
-
-          const response = await api.post<{ success: boolean; image_url: string }>(
-            "/api/finance/upload-image",
-            formDataUpload,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
-          return response.data.image_url;
+          console.error("Error uploading to Cloudinary:", err);
+          // Continue with other files even if one fails
+          if (err instanceof Error) {
+            throw err;
+          }
+          throw new Error("ไม่สามารถอัพโหลดภาพได้");
         }
-      });
+      }
 
-      const uploadedUrls = await Promise.all(uploadPromises);
+      // Update form with uploaded URLs
       const newImageUrls = [...(formData.image_urls || []), ...uploadedUrls];
       setFormData({ ...formData, image_urls: newImageUrls });
       setImagePreviews(newImageUrls);
     } catch (err) {
-      const axiosError = err as AxiosError;
+      console.error("Upload error:", err);
       setError(
-        (axiosError.response?.data as { error?: string })?.error ||
-          "ไม่สามารถอัพโหลดภาพได้"
+        err instanceof Error ? err.message : "ไม่สามารถอัพโหลดภาพได้"
       );
     } finally {
       setUploadingImage(false);
@@ -398,40 +411,56 @@ const FinanceTransactionForm: React.FC = () => {
       // Stop camera
       stopCamera();
 
-      // Upload the photo
+      // Upload the photo directly to Cloudinary
       setUploadingImage(true);
       setError("");
 
       try {
-        const formDataUpload = new FormData();
-        formDataUpload.append("image", file);
+        // Get upload signature from backend
+        const signatureResponse = await api.get<{
+          cloud_name: string;
+          api_key: string;
+          timestamp: string;
+          signature: string;
+          folder: string;
+          upload_url: string;
+        }>("/api/finance/upload-signature");
 
-        const response = await api.post<{ success: boolean; image_url: string }>(
-          "/api/finance/upload-image",
-          formDataUpload,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        const { upload_url, api_key, timestamp, signature, folder } = signatureResponse.data;
 
-        if (response.data && response.data.image_url) {
-          const newImageUrls = [...(formData.image_urls || []), response.data.image_url];
+        // Create FormData for Cloudinary
+        const cloudinaryFormData = new FormData();
+        cloudinaryFormData.append("file", file);
+        cloudinaryFormData.append("api_key", api_key);
+        cloudinaryFormData.append("timestamp", timestamp);
+        cloudinaryFormData.append("signature", signature);
+        cloudinaryFormData.append("folder", folder);
+
+        // Upload directly to Cloudinary (not through backend)
+        const response = await fetch(upload_url, {
+          method: "POST",
+          body: cloudinaryFormData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || "Upload failed");
+        }
+
+        const data = await response.json();
+        if (data.secure_url) {
+          const newImageUrls = [...(formData.image_urls || []), data.secure_url];
           setFormData({ ...formData, image_urls: newImageUrls });
           setImagePreviews(newImageUrls);
           setError(""); // Clear any previous errors
         } else {
-          throw new Error("ไม่ได้รับ URL ภาพจากเซิร์ฟเวอร์");
+          throw new Error("ไม่ได้รับ URL ภาพจาก Cloudinary");
         }
       } catch (err) {
-        const axiosError = err as AxiosError;
-        const errorMessage = 
-          (axiosError.response?.data as { error?: string })?.error ||
-          axiosError.message ||
-          "ไม่สามารถอัพโหลดภาพได้";
-        setError(errorMessage);
         console.error("Upload error:", err);
+        const errorMessage = 
+          err instanceof Error ? err.message : "ไม่สามารถอัพโหลดภาพได้";
+        setError(errorMessage);
       } finally {
         setUploadingImage(false);
       }
