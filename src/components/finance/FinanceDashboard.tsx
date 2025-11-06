@@ -270,6 +270,9 @@ const FinanceDashboard: React.FC = () => {
                     <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       หมวดหมู่
                     </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                      รูปภาพ
+                    </th>
                     <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
                       จำนวนเงิน
                     </th>
@@ -300,6 +303,18 @@ const FinanceDashboard: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {transaction.category || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {transaction.image_url ? (
+                          <img
+                            src={transaction.image_url}
+                            alt="Transaction"
+                            className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:scale-110 transition-transform"
+                            onClick={() => window.open(transaction.image_url, "_blank")}
+                          />
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
                       </td>
                       <td
                         className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
@@ -377,9 +392,14 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
       ? new Date(transaction.date).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0],
     category: transaction?.category || "",
+    image_url: transaction?.image_url || "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    transaction?.image_url || null
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -387,10 +407,27 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
     setError("");
 
     try {
+      // Prepare request data (only include image_url if it exists)
+      const requestData: FinanceTransactionRequest = {
+        type: formData.type,
+        amount: formData.amount,
+        description: formData.description,
+        date: formData.date,
+        category: formData.category,
+      };
+      
+      // Only include image_url if it has a value
+      if (formData.image_url) {
+        requestData.image_url = formData.image_url;
+      } else if (transaction && transaction.image_url && !formData.image_url) {
+        // If editing and removing image, send empty string
+        requestData.image_url = "";
+      }
+
       if (transaction) {
-        await api.put(`/api/finance/transactions/${transaction.id}`, formData);
+        await api.put(`/api/finance/transactions/${transaction.id}`, requestData);
       } else {
-        await api.post("/api/finance/transactions", formData);
+        await api.post("/api/finance/transactions", requestData);
       }
       onSuccess();
     } catch (err) {
@@ -401,6 +438,59 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError("กรุณาเลือกไฟล์ภาพเท่านั้น");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("ขนาดไฟล์ต้องไม่เกิน 10MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    setError("");
+
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("image", file);
+
+      const response = await api.post<{ success: boolean; image_url: string }>(
+        "/api/finance/upload-image",
+        formDataUpload,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.success && response.data.image_url) {
+        setFormData({ ...formData, image_url: response.data.image_url });
+        setImagePreview(response.data.image_url);
+      }
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      setError(
+        (axiosError.response?.data as { error?: string })?.error ||
+          "ไม่สามารถอัพโหลดภาพได้"
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image_url: "" });
+    setImagePreview(null);
   };
 
   return (
@@ -500,6 +590,87 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="เช่น บุญบารมี, ค่าใช้จ่ายทั่วไป"
             />
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              รูปภาพ (ถ้ามี)
+            </label>
+            {imagePreview ? (
+              <div className="space-y-2">
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("image-upload")?.click()}
+                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? "กำลังอัพโหลด..." : "เปลี่ยนรูปภาพ"}
+                </button>
+              </div>
+            ) : (
+              <div>
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+                <label
+                  htmlFor="image-upload"
+                  className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                    uploadingImage
+                      ? "border-gray-300 bg-gray-100"
+                      : "border-gray-300 hover:border-green-500 hover:bg-green-50"
+                  }`}
+                >
+                  {uploadingImage ? (
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mb-2"></div>
+                      <span className="text-sm text-gray-600">กำลังอัพโหลด...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <svg
+                        className="w-10 h-10 text-gray-400 mb-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className="text-sm text-gray-600">
+                        คลิกเพื่ออัพโหลดรูปภาพ
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">
+                        รองรับ JPEG, PNG, GIF, WebP (สูงสุด 10MB)
+                      </span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="flex space-x-4 pt-4">

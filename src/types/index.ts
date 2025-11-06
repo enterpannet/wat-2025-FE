@@ -141,6 +141,7 @@ export interface FinanceTransaction {
   description: string;
   date: string;
   category: string;
+  image_url?: string;
   user_id: number;
   user?: User;
 }
@@ -151,6 +152,7 @@ export interface FinanceTransactionRequest {
   description: string;
   date: string;
   category: string;
+  image_url?: string;
 }
 
 export interface FinanceSummary {
