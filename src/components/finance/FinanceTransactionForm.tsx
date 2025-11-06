@@ -202,24 +202,70 @@ const FinanceTransactionForm: React.FC = () => {
     }
   };
 
-  const capturePhoto = () => {
-    if (!cameraVideoRef) return;
+  const capturePhoto = async () => {
+    if (!cameraVideoRef) {
+      setError("ไม่พบกล้อง กรุณาลองใหม่อีกครั้ง");
+      return;
+    }
 
-    const canvas = document.createElement("canvas");
-    canvas.width = cameraVideoRef.videoWidth;
-    canvas.height = cameraVideoRef.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    // ตรวจสอบว่า video พร้อมหรือยัง
+    if (cameraVideoRef.readyState !== HTMLMediaElement.HAVE_ENOUGH_DATA) {
+      setError("กล้องยังไม่พร้อม กรุณารอสักครู่");
+      return;
+    }
 
-    ctx.drawImage(cameraVideoRef, 0, 0);
+    // ตรวจสอบขนาด video
+    const videoWidth = cameraVideoRef.videoWidth;
+    const videoHeight = cameraVideoRef.videoHeight;
     
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
+    if (videoWidth === 0 || videoHeight === 0) {
+      setError("ไม่สามารถอ่านขนาดภาพได้ กรุณาลองใหม่อีกครั้ง");
+      return;
+    }
+
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+      const ctx = canvas.getContext("2d");
+      
+      if (!ctx) {
+        setError("ไม่สามารถสร้าง canvas ได้");
+        return;
+      }
+
+      // วาดรูปภาพลงบน canvas (กลับด้านเพราะ mirror)
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.drawImage(cameraVideoRef, -videoWidth, 0, videoWidth, videoHeight);
+      ctx.restore();
+
+      // แปลง canvas เป็น blob
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(
+          (blob) => resolve(blob),
+          "image/jpeg",
+          0.9 // quality
+        );
+      });
+
+      if (!blob) {
+        setError("ไม่สามารถแปลงภาพเป็นไฟล์ได้");
+        return;
+      }
 
       // Convert blob to File
-      const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+      const file = new File([blob], `photo-${Date.now()}.jpg`, { 
+        type: "image/jpeg",
+        lastModified: Date.now()
+      });
 
       // Validate file size
+      if (file.size === 0) {
+        setError("ไฟล์ภาพว่างเปล่า กรุณาลองใหม่อีกครั้ง");
+        return;
+      }
+
       if (file.size > 10 * 1024 * 1024) {
         setError("ขนาดไฟล์ต้องไม่เกิน 10MB");
         stopCamera();
@@ -247,26 +293,40 @@ const FinanceTransactionForm: React.FC = () => {
           }
         );
 
-        const newImageUrls = [...(formData.image_urls || []), response.data.image_url];
-        setFormData({ ...formData, image_urls: newImageUrls });
-        setImagePreviews(newImageUrls);
+        if (response.data && response.data.image_url) {
+          const newImageUrls = [...(formData.image_urls || []), response.data.image_url];
+          setFormData({ ...formData, image_urls: newImageUrls });
+          setImagePreviews(newImageUrls);
+          setError(""); // Clear any previous errors
+        } else {
+          throw new Error("ไม่ได้รับ URL ภาพจากเซิร์ฟเวอร์");
+        }
       } catch (err) {
         const axiosError = err as AxiosError;
-        setError(
+        const errorMessage = 
           (axiosError.response?.data as { error?: string })?.error ||
-            "ไม่สามารถอัพโหลดภาพได้"
-        );
+          axiosError.message ||
+          "ไม่สามารถอัพโหลดภาพได้";
+        setError(errorMessage);
+        console.error("Upload error:", err);
       } finally {
         setUploadingImage(false);
       }
-    }, "image/jpeg", 0.9);
+    } catch (err) {
+      console.error("Capture error:", err);
+      setError("เกิดข้อผิดพลาดในการถ่ายรูป กรุณาลองใหม่อีกครั้ง");
+      stopCamera();
+    }
   };
 
   // Set video ref when component mounts or cameraVideoRef changes
   useEffect(() => {
     if (showCamera && cameraVideoRef && cameraStream) {
       cameraVideoRef.srcObject = cameraStream;
-      cameraVideoRef.play();
+      cameraVideoRef.play().catch((err) => {
+        console.error("Error playing video:", err);
+        setError("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบการอนุญาต");
+      });
     }
   }, [showCamera, cameraStream, cameraVideoRef]);
 
@@ -552,6 +612,11 @@ const FinanceTransactionForm: React.FC = () => {
           size="md"
         >
           <div className="space-y-4">
+            {error && (
+              <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
             <div className="relative bg-black rounded-lg overflow-hidden">
               <video
                 ref={(ref) => setCameraVideoRef(ref)}
@@ -565,35 +630,46 @@ const FinanceTransactionForm: React.FC = () => {
               <button
                 type="button"
                 onClick={stopCamera}
-                className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
+                disabled={uploadingImage}
+                className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ยกเลิก
               </button>
               <button
                 type="button"
                 onClick={capturePhoto}
-                className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-lg flex items-center gap-2"
+                disabled={uploadingImage}
+                className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                ถ่ายรูป
+                {uploadingImage ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>กำลังอัพโหลด...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    <span>ถ่ายรูป</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
