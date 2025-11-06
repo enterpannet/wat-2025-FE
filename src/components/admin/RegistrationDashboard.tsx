@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { AxiosError } from "../../api";
-import { Registration } from "../../types";
+import { Registration, Province, District, SubDistrict } from "../../types";
 import AdminNavbar from "./AdminNavbar";
 
 interface ErrorResponse {
@@ -22,11 +22,69 @@ const RegistrationDashboard: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Registration>>({});
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [subDistricts, setSubDistricts] = useState<SubDistrict[]>([]);
+  const [provinceSearch, setProvinceSearch] = useState<string>("");
+  const [showProvinceDropdown, setShowProvinceDropdown] = useState<boolean>(false);
 
   useEffect(() => {
     checkAuth();
     fetchRegistrations();
+    fetchProvinces();
   }, []);
+
+  useEffect(() => {
+    if (editFormData.province_id && showEditModal) {
+      fetchDistricts(editFormData.province_id.toString());
+    }
+  }, [editFormData.province_id, showEditModal]);
+
+  useEffect(() => {
+    if (editFormData.district_id && showEditModal) {
+      fetchSubDistricts(editFormData.district_id.toString());
+    }
+  }, [editFormData.district_id, showEditModal]);
+
+  const fetchProvinces = async (): Promise<void> => {
+    try {
+      const response = await api.get<Province[]>("/api/public/provinces");
+      if (Array.isArray(response.data)) {
+        setProvinces(response.data);
+      }
+    } catch (err) {
+      console.error("Error fetching provinces:", err);
+    }
+  };
+
+  const fetchDistricts = async (provinceId: string): Promise<void> => {
+    try {
+      const response = await api.get<District[]>(
+        `/api/public/provinces/${provinceId}/districts`,
+      );
+      if (Array.isArray(response.data)) {
+        setDistricts(response.data);
+      }
+    } catch (err) {
+      console.error("Error fetching districts:", err);
+      setDistricts([]);
+    }
+  };
+
+  const fetchSubDistricts = async (districtId: string): Promise<void> => {
+    try {
+      const response = await api.get<SubDistrict[]>(
+        `/api/public/districts/${districtId}/sub-districts`,
+      );
+      if (Array.isArray(response.data)) {
+        setSubDistricts(response.data);
+      }
+    } catch (err) {
+      console.error("Error fetching sub-districts:", err);
+      setSubDistricts([]);
+    }
+  };
 
   const checkAuth = async (): Promise<void> => {
     try {
@@ -69,12 +127,58 @@ const RegistrationDashboard: React.FC = () => {
     }
   };
 
-  const handleEdit = (registration: Registration): void => {
+  // Format date from ค.ศ. (YYYY-MM-DD) to พ.ศ. (DD/MM/YYYY)
+  const formatDateToBE = (ceDate: string): string => {
+    if (!ceDate) return "";
+    const date = new Date(ceDate);
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const beYear = date.getFullYear() + 543;
+    return `${day}/${month}/${beYear}`;
+  };
+
+  // Parse พ.ศ. date (DD/MM/YYYY) to ค.ศ. (YYYY-MM-DD)
+  const parseBEDateToCE = (beDate: string): string => {
+    if (!beDate) return "";
+    const parts = beDate.split("/");
+    if (parts.length === 3) {
+      const [day, month, beYear] = parts;
+      const dayNum = parseInt(day);
+      const monthNum = parseInt(month);
+      const beYearNum = parseInt(beYear);
+      
+      // Validate date parts
+      if (isNaN(dayNum) || isNaN(monthNum) || isNaN(beYearNum)) {
+        return "";
+      }
+      
+      // Validate ranges
+      if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || beYearNum < 2400) {
+        return "";
+      }
+      
+      const ceYear = beYearNum - 543;
+      return `${ceYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+    return "";
+  };
+
+  // Format date input: auto-add "/" when typing numbers
+  const formatDateInput = (value: string): string => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length <= 2) {
+      return digits;
+    } else if (digits.length <= 4) {
+      return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    } else {
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+    }
+  };
+
+  const handleEdit = async (registration: Registration): Promise<void> => {
     setEditingId(registration.id);
-    // Format birth_date for input (YYYY-MM-DD)
-    const birthDate = registration.birth_date
-      ? new Date(registration.birth_date).toISOString().split("T")[0]
-      : "";
+    // Format birth_date to พ.ศ. (DD/MM/YYYY)
+    const birthDateBE = formatDateToBE(registration.birth_date);
     
     setEditFormData({
       full_name: registration.full_name,
@@ -84,44 +188,155 @@ const RegistrationDashboard: React.FC = () => {
       temple_name: registration.temple_name || "",
       medical_condition: registration.medical_condition || "",
       vassa: registration.vassa || 0,
-      birth_date: birthDate,
+      birth_date: birthDateBE,
       province_id: registration.province_id,
       district_id: registration.district_id,
       sub_district_id: registration.sub_district_id,
     });
+    
+    // Set province search
+    const selectedProvince = provinces.find(p => p.id === registration.province_id);
+    if (selectedProvince) {
+      setProvinceSearch(selectedProvince.name_th);
+    } else {
+      setProvinceSearch("");
+    }
+    
+    // Load districts and sub-districts if province/district is selected
+    if (registration.province_id) {
+      await fetchDistricts(registration.province_id.toString());
+    }
+    if (registration.district_id) {
+      await fetchSubDistricts(registration.district_id.toString());
+    }
+    
+    setShowEditModal(true);
   };
 
-  const handleSaveEdit = async (id: number): Promise<void> => {
+  const handleEditFormChange = async (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): Promise<void> => {
+    const { name, value } = e.target;
+    
+    if (name === "birth_date") {
+      const formatted = formatDateInput(value);
+      setEditFormData((prev) => ({ ...prev, [name]: formatted }));
+    } else if (name === "province_id") {
+      const provinceId = parseInt(value);
+      setEditFormData((prev) => ({
+        ...prev,
+        province_id: provinceId,
+        district_id: 0,
+        sub_district_id: 0,
+      }));
+      setDistricts([]);
+      setSubDistricts([]);
+      // Load districts for selected province
+      if (provinceId) {
+        await fetchDistricts(provinceId.toString());
+      }
+    } else if (name === "district_id") {
+      const districtId = parseInt(value);
+      setEditFormData((prev) => ({
+        ...prev,
+        district_id: districtId,
+        sub_district_id: 0,
+      }));
+      setSubDistricts([]);
+      // Load sub-districts for selected district
+      if (districtId) {
+        await fetchSubDistricts(districtId.toString());
+      }
+    } else {
+      setEditFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSaveEdit = async (): Promise<void> => {
+    if (!editingId) return;
+    
     try {
-      // Prepare data for API
-      const updateData: any = {
-        full_name: editFormData.full_name,
-        nickname: editFormData.nickname || "",
-        phone_number: editFormData.phone_number,
-        address_detail: editFormData.address_detail,
-        temple_name: editFormData.temple_name || "",
-        medical_condition: editFormData.medical_condition || "",
-        vassa: editFormData.vassa || 0,
-        birth_date: editFormData.birth_date,
-        province_id: editFormData.province_id,
-        district_id: editFormData.district_id,
-        sub_district_id: editFormData.sub_district_id,
+      // Validate required fields
+      if (!editFormData.full_name || !editFormData.phone_number || !editFormData.address_detail) {
+        alert("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
+        return;
+      }
+
+      if (!editFormData.province_id || !editFormData.district_id || !editFormData.sub_district_id) {
+        alert("กรุณาเลือกจังหวัด อำเภอ และตำบล");
+        return;
+      }
+
+      // Convert birth_date from พ.ศ. (DD/MM/YYYY) to ค.ศ. (YYYY-MM-DD)
+      const ceBirthDate = parseBEDateToCE(editFormData.birth_date as string);
+      
+      if (!ceBirthDate) {
+        alert("รูปแบบวันเกิดไม่ถูกต้อง กรุณาใช้รูปแบบ DD/MM/YYYY (เช่น 15/03/2545)");
+        return;
+      }
+      
+      // Prepare data for API - ensure all fields are properly formatted
+      // Backend expects uint for IDs, so we need to ensure they are numbers, not strings
+      const updateData = {
+        full_name: String(editFormData.full_name || "").trim(),
+        nickname: String(editFormData.nickname || "").trim(),
+        phone_number: String(editFormData.phone_number || "").trim(),
+        address_detail: String(editFormData.address_detail || "").trim(),
+        temple_name: String(editFormData.temple_name || "").trim(),
+        medical_condition: String(editFormData.medical_condition || "").trim(),
+        vassa: Number(editFormData.vassa || 0),
+        birth_date: ceBirthDate,
+        province_id: Number(editFormData.province_id),
+        district_id: Number(editFormData.district_id),
+        sub_district_id: Number(editFormData.sub_district_id),
       };
 
-      await api.put(`/api/admin/registrations/${id}`, updateData);
+      // Validate IDs are valid numbers (greater than 0)
+      if (!updateData.province_id || updateData.province_id === 0 || isNaN(updateData.province_id)) {
+        alert("กรุณาเลือกจังหวัด");
+        return;
+      }
+      if (!updateData.district_id || updateData.district_id === 0 || isNaN(updateData.district_id)) {
+        alert("กรุณาเลือกอำเภอ");
+        return;
+      }
+      if (!updateData.sub_district_id || updateData.sub_district_id === 0 || isNaN(updateData.sub_district_id)) {
+        alert("กรุณาเลือกตำบล");
+        return;
+      }
+
+      // Validate birth_date format
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(updateData.birth_date)) {
+        alert(`รูปแบบวันเกิดไม่ถูกต้อง: ${updateData.birth_date}. ควรเป็น YYYY-MM-DD`);
+        return;
+      }
+
+      // Debug: Log the data being sent
+      console.log("Sending update data:", JSON.stringify(updateData, null, 2));
+      console.log("Birth date:", ceBirthDate);
+      console.log("Province ID:", updateData.province_id, typeof updateData.province_id);
+      console.log("District ID:", updateData.district_id, typeof updateData.district_id);
+      console.log("Sub District ID:", updateData.sub_district_id, typeof updateData.sub_district_id);
+
+      await api.put(`/api/admin/registrations/${editingId}`, updateData);
       await fetchRegistrations();
-      setEditingId(null);
-      setEditFormData({});
+      handleCancelEdit();
       alert("บันทึกข้อมูลสำเร็จ");
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
-      alert(axiosError.response?.data?.error || "ไม่สามารถบันทึกข้อมูลได้");
+      const errorMessage = axiosError.response?.data?.error || axiosError.message || "ไม่สามารถบันทึกข้อมูลได้";
+      console.error("Update error:", axiosError.response?.data);
+      alert(errorMessage);
     }
   };
 
   const handleCancelEdit = (): void => {
     setEditingId(null);
     setEditFormData({});
+    setShowEditModal(false);
+    setProvinceSearch("");
+    setShowProvinceDropdown(false);
+    setDistricts([]);
+    setSubDistricts([]);
   };
 
   const formatDate = (dateString: string): string => {
@@ -151,18 +366,26 @@ const RegistrationDashboard: React.FC = () => {
           <div className="mb-8 flex justify-between items-center">
             <div>
               <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                ระบบลงทะเบียน
+                จัดการข้อมูลผู้ลงทะเบียนพระปริวาส
               </h1>
               <p className="text-lg text-gray-600">
                 จัดการข้อมูลผู้ลงทะเบียนทั้งหมด ({registrations.length} รายการ)
               </p>
             </div>
-            <button
-              onClick={() => navigate("/admin/registration/detail")}
-              className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all font-semibold shadow-lg hover:shadow-xl"
-            >
-              📋 ตรารางสวด →
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate("/")}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:shadow-xl"
+              >
+                🏠 ลงทะเบียนพระปริวาส
+              </button>
+              <button
+                onClick={() => navigate("/admin/registration/detail")}
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all font-semibold shadow-lg hover:shadow-xl"
+              >
+                📋 ตรารางสวด →
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -217,167 +440,59 @@ const RegistrationDashboard: React.FC = () => {
                         key={registration.id}
                         className="hover:bg-purple-50 transition-colors"
                       >
-                        {editingId === registration.id ? (
-                          <>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {index + 1}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="text"
-                                value={editFormData.full_name || ""}
-                                onChange={(e) =>
-                                  setEditFormData({
-                                    ...editFormData,
-                                    full_name: e.target.value,
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="text"
-                                value={editFormData.nickname || ""}
-                                onChange={(e) =>
-                                  setEditFormData({
-                                    ...editFormData,
-                                    nickname: e.target.value,
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="text"
-                                value={editFormData.phone_number || ""}
-                                onChange={(e) =>
-                                  setEditFormData({
-                                    ...editFormData,
-                                    phone_number: e.target.value,
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              />
-                            </td>
-                            <td className="px-6 py-4">
-                              <textarea
-                                value={editFormData.address_detail || ""}
-                                onChange={(e) =>
-                                  setEditFormData({
-                                    ...editFormData,
-                                    address_detail: e.target.value,
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                rows={2}
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="text"
-                                value={editFormData.temple_name || ""}
-                                onChange={(e) =>
-                                  setEditFormData({
-                                    ...editFormData,
-                                    temple_name: e.target.value,
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="number"
-                                value={editFormData.vassa || 0}
-                                onChange={(e) =>
-                                  setEditFormData({
-                                    ...editFormData,
-                                    vassa: parseInt(e.target.value) || 0,
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                min="0"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {formatDate(registration.created_at)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <div className="flex gap-2 justify-center">
-                                <button
-                                  onClick={() => handleSaveEdit(registration.id)}
-                                  className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold text-sm"
-                                >
-                                  💾 บันทึก
-                                </button>
-                                <button
-                                  onClick={handleCancelEdit}
-                                  className="px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold text-sm"
-                                >
-                                  ✕ ยกเลิก
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {index + 1}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-semibold text-purple-700">
-                                {registration.full_name}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                              {registration.nickname || "-"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                              {registration.phone_number}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-700">
-                              <div className="max-w-xs">
-                                <div className="font-medium">
-                                  {registration.address_detail}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  ต.{registration.sub_district?.name_th || "-"} อ.
-                                  {registration.district?.name_th || "-"} จ.
-                                  {registration.province?.name_th || "-"}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                              {registration.temple_name || "-"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center font-semibold">
-                              {registration.vassa || 0}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {formatDate(registration.created_at)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <div className="flex gap-2 justify-center">
-                                <button
-                                  onClick={() => handleEdit(registration)}
-                                  className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
-                                >
-                                  ✏️ แก้ไข
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleDelete(registration.id, registration.full_name)
-                                  }
-                                  className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
-                                >
-                                  🗑️ ลบ
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        )}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {index + 1}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-purple-700">
+                            {registration.full_name}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {registration.nickname || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {registration.phone_number}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          <div className="max-w-xs">
+                            <div className="font-medium">
+                              {registration.address_detail}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              ต.{registration.sub_district?.name_th || "-"} อ.
+                              {registration.district?.name_th || "-"} จ.
+                              {registration.province?.name_th || "-"}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {registration.temple_name || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center font-semibold">
+                          {registration.vassa || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(registration.created_at)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="flex gap-2 justify-center">
+                            <button
+                              onClick={() => handleEdit(registration)}
+                              className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
+                            >
+                              ✏️ แก้ไข
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDelete(registration.id, registration.full_name)
+                              }
+                              className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
+                            >
+                              🗑️ ลบ
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -387,6 +502,278 @@ const RegistrationDashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleCancelEdit();
+            }
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 rounded-t-xl">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">แก้ไขข้อมูลผู้ลงทะเบียน</h2>
+                <button
+                  onClick={handleCancelEdit}
+                  className="text-white hover:text-gray-200 text-2xl font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSaveEdit();
+                }}
+                className="space-y-6"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* ชื่อ-นามสกุล */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ชื่อ-นามสกุล <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={editFormData.full_name || ""}
+                      onChange={handleEditFormChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* ฉายา */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ฉายา
+                    </label>
+                    <input
+                      type="text"
+                      name="nickname"
+                      value={editFormData.nickname || ""}
+                      onChange={handleEditFormChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* วันเกิด */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      วันเกิด (พ.ศ.) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="birth_date"
+                      value={editFormData.birth_date || ""}
+                      onChange={handleEditFormChange}
+                      placeholder="DD/MM/YYYY"
+                      pattern="\d{2}/\d{2}/\d{4}"
+                      maxLength={10}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      title="รูปแบบ: DD/MM/YYYY (เช่น 15/03/2545)"
+                    />
+                  </div>
+
+                  {/* เบอร์โทรศัพท์ */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="phone_number"
+                      value={editFormData.phone_number || ""}
+                      onChange={handleEditFormChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* ชื่อวัด */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ชื่อวัด
+                    </label>
+                    <input
+                      type="text"
+                      name="temple_name"
+                      value={editFormData.temple_name || ""}
+                      onChange={handleEditFormChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* พรรษา */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      พรรษา
+                    </label>
+                    <input
+                      type="number"
+                      name="vassa"
+                      value={editFormData.vassa || 0}
+                      onChange={handleEditFormChange}
+                      min="0"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* ที่อยู่ */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    ที่อยู่ <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="address_detail"
+                    value={editFormData.address_detail || ""}
+                    onChange={handleEditFormChange}
+                    required
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* จังหวัด */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    จังหวัด <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={provinceSearch}
+                      onChange={(e) => {
+                        setProvinceSearch(e.target.value);
+                        setShowProvinceDropdown(true);
+                      }}
+                      onFocus={() => setShowProvinceDropdown(true)}
+                      placeholder="พิมพ์ค้นหาจังหวัด..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    {showProvinceDropdown && provinces.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {provinces
+                          .filter((p) =>
+                            p.name_th
+                              .toLowerCase()
+                              .includes(provinceSearch.toLowerCase())
+                          )
+                          .map((province) => (
+                            <div
+                              key={province.id}
+                              onClick={async () => {
+                                setEditFormData((prev) => ({
+                                  ...prev,
+                                  province_id: province.id,
+                                  district_id: 0,
+                                  sub_district_id: 0,
+                                }));
+                                setProvinceSearch(province.name_th);
+                                setShowProvinceDropdown(false);
+                                setDistricts([]);
+                                setSubDistricts([]);
+                                // Load districts for selected province
+                                await fetchDistricts(province.id.toString());
+                              }}
+                              className="px-4 py-2 hover:bg-purple-100 cursor-pointer"
+                            >
+                              {province.name_th}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* อำเภอ */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    อำเภอ <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="district_id"
+                    value={editFormData.district_id || ""}
+                    onChange={handleEditFormChange}
+                    required
+                    disabled={!editFormData.province_id}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    <option value="">เลือกอำเภอ</option>
+                    {districts.map((district) => (
+                      <option key={district.id} value={district.id}>
+                        {district.name_th}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* ตำบล */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    ตำบล <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="sub_district_id"
+                    value={editFormData.sub_district_id || ""}
+                    onChange={handleEditFormChange}
+                    required
+                    disabled={!editFormData.district_id}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    <option value="">เลือกตำบล</option>
+                    {subDistricts.map((subDistrict) => (
+                      <option key={subDistrict.id} value={subDistrict.id}>
+                        {subDistrict.name_th} ({subDistrict.zip_code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* โรคประจำตัว */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    โรคประจำตัว
+                  </label>
+                  <textarea
+                    name="medical_condition"
+                    value={editFormData.medical_condition || ""}
+                    onChange={handleEditFormChange}
+                    rows={2}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-4 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all font-semibold shadow-lg"
+                  >
+                    💾 บันทึกข้อมูล
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

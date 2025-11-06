@@ -39,6 +39,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
+  const [provinceSearch, setProvinceSearch] = useState<string>("");
+  const [showProvinceDropdown, setShowProvinceDropdown] = useState<boolean>(false);
 
   useEffect(() => {
     fetchProvinces();
@@ -53,8 +55,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
         sub_district_id: "",
       }));
       setSubDistricts([]);
+      // Update province search to show selected province name
+      const selectedProvince = provinces.find(p => p.id === parseInt(formData.province_id));
+      if (selectedProvince) {
+        setProvinceSearch(selectedProvince.name_th);
+      }
     }
-  }, [formData.province_id]);
+  }, [formData.province_id, provinces]);
 
   useEffect(() => {
     if (formData.district_id) {
@@ -116,11 +123,47 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
     }
   };
 
+  // Format date input: auto-add "/" when typing numbers
+  const formatDateInput = (value: string): string => {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, "");
+    
+    // Format: DD/MM/YYYY
+    if (digits.length <= 2) {
+      return digits;
+    } else if (digits.length <= 4) {
+      return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    } else {
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+    }
+  };
+
+  // Parse พ.ศ. date (DD/MM/YYYY) to ค.ศ. (YYYY-MM-DD)
+  const parseBEDateToCE = (beDate: string): string => {
+    if (!beDate) return "";
+    // Format: DD/MM/YYYY
+    const parts = beDate.split("/");
+    if (parts.length === 3) {
+      const [day, month, beYear] = parts;
+      const ceYear = parseInt(beYear) - 543; // Convert พ.ศ. to ค.ศ.
+      return `${ceYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+    return beDate;
+  };
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ): void => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Handle birth_date specially for พ.ศ.
+    if (name === "birth_date") {
+      // Format input automatically: DD/MM/YYYY
+      const formatted = formatDateInput(value);
+      setFormData((prev) => ({ ...prev, [name]: formatted }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
 
     // Update zip code when sub-district changes
     if (name === "sub_district_id" && value) {
@@ -137,8 +180,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
     setError("");
 
     try {
+      // Convert birth_date from พ.ศ. (DD/MM/YYYY) to ค.ศ. (YYYY-MM-DD)
+      const ceBirthDate = parseBEDateToCE(formData.birth_date);
+      
       const submitData: RegistrationRequest = {
         ...formData,
+        birth_date: ceBirthDate,
         province_id: parseInt(formData.province_id),
         district_id: parseInt(formData.district_id),
         sub_district_id: parseInt(formData.sub_district_id),
@@ -161,6 +208,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
         medical_condition: "",
         vassa: "",
       });
+      setProvinceSearch("");
+      setShowProvinceDropdown(false);
 
       setTimeout(() => {
         setSuccess(false);
@@ -242,27 +291,34 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
                   วันเกิด <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="date"
+                  type="text"
                   name="birth_date"
                   value={formData.birth_date}
                   onChange={handleChange}
                   required
+                  maxLength={10}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+                  placeholder="พิมพ์ตัวเลขเท่านั้น เช่น 15032545"
+                  pattern="\d{2}/\d{2}/\d{4}"
+                  title="พิมพ์ตัวเลข 8 หลัก ระบบจะใส่ / ให้อัตโนมัติ"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  พิมพ์ตัวเลข 8 หลัก (วันเดือนปี พ.ศ.) เช่น 15032545 ระบบจะใส่ / ให้อัตโนมัติ
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+                  พรรษา
                 </label>
                 <input
-                  type="tel"
-                  name="phone_number"
-                  value={formData.phone_number}
+                  type="number"
+                  name="vassa"
+                  value={formData.vassa}
                   onChange={handleChange}
-                  required
+                  min="0"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
-                  placeholder="0812345678"
+                  placeholder="กรอกจำนวนพรรษา"
                 />
               </div>
             </div>
@@ -273,24 +329,83 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
               </h3>
 
               <div className="grid md:grid-cols-3 gap-6 mb-6">
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     จังหวัด <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="province_id"
-                    value={formData.province_id}
-                    onChange={handleChange}
-                    required
+                  <input
+                    type="text"
+                    value={provinceSearch || provinces.find(p => p.id === parseInt(formData.province_id))?.name_th || ""}
+                    onChange={(e) => {
+                      const searchValue = e.target.value;
+                      setProvinceSearch(searchValue);
+                      setShowProvinceDropdown(true);
+                      // Clear selection if search doesn't match selected province
+                      const selectedProvince = provinces.find(p => p.id === parseInt(formData.province_id));
+                      if (selectedProvince && !selectedProvince.name_th.includes(searchValue)) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          province_id: "",
+                          district_id: "",
+                          sub_district_id: "",
+                        }));
+                        setDistricts([]);
+                        setSubDistricts([]);
+                        setZipCode("");
+                      }
+                    }}
+                    onFocus={() => setShowProvinceDropdown(true)}
+                    onBlur={() => {
+                      // Delay to allow click on dropdown item
+                      setTimeout(() => setShowProvinceDropdown(false), 200);
+                    }}
+                    placeholder="พิมพ์ค้นหาจังหวัด..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
-                  >
-                    <option value="">เลือกจังหวัด</option>
-                    {provinces.map((province) => (
-                      <option key={province.id} value={province.id}>
-                        {province.name_th}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  {showProvinceDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {provinces
+                        .filter((province) =>
+                          province.name_th.toLowerCase().includes(provinceSearch.toLowerCase())
+                        )
+                        .map((province) => (
+                          <div
+                            key={province.id}
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                province_id: province.id.toString(),
+                                district_id: "",
+                                sub_district_id: "",
+                              }));
+                              setProvinceSearch(province.name_th);
+                              setShowProvinceDropdown(false);
+                              setDistricts([]);
+                              setSubDistricts([]);
+                              setZipCode("");
+                            }}
+                            className="px-4 py-2 hover:bg-purple-50 cursor-pointer transition-colors"
+                          >
+                            {province.name_th}
+                          </div>
+                        ))}
+                      {provinces.filter((province) =>
+                        province.name_th.toLowerCase().includes(provinceSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="px-4 py-2 text-gray-500 text-sm">
+                          ไม่พบจังหวัดที่ค้นหา
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {formData.province_id && (
+                    <input
+                      type="hidden"
+                      name="province_id"
+                      value={formData.province_id}
+                      required
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -383,16 +498,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  พรรษา
+                  เบอร์โทรศัพท์ <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="number"
-                  name="vassa"
-                  value={formData.vassa}
+                  type="tel"
+                  name="phone_number"
+                  value={formData.phone_number}
                   onChange={handleChange}
-                  min="0"
+                  required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
-                  placeholder="กรอกจำนวนพรรษา"
+                  placeholder="0812345678"
                 />
               </div>
 
