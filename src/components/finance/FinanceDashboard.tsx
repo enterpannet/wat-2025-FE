@@ -305,13 +305,45 @@ const FinanceDashboard: React.FC = () => {
                         {transaction.category || "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {transaction.image_url ? (
-                          <img
-                            src={transaction.image_url}
-                            alt="Transaction"
-                            className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:scale-110 transition-transform"
-                            onClick={() => window.open(transaction.image_url, "_blank")}
-                          />
+                        {transaction.image_urls && transaction.image_urls.length > 0 ? (
+                          <div className="flex gap-2">
+                            {transaction.image_urls.slice(0, 3).map((url, index) => (
+                              <img
+                                key={index}
+                                src={url}
+                                alt={`Transaction ${index + 1}`}
+                                className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:scale-110 transition-transform border border-gray-200"
+                                onClick={() => window.open(url, "_blank")}
+                              />
+                            ))}
+                            {transaction.image_urls.length > 3 && (
+                              <div
+                                className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors border border-gray-200"
+                                onClick={() => {
+                                  // Open all images in a modal or new window
+                                  if (!transaction.image_urls) return;
+                                  const imageWindow = window.open("", "_blank");
+                                  if (imageWindow) {
+                                    imageWindow.document.write(`
+                                      <html>
+                                        <head><title>ภาพทั้งหมด (${transaction.image_urls.length})</title></head>
+                                        <body style="margin:0;padding:20px;background:#f0f0f0;">
+                                          <h2>ภาพทั้งหมด (${transaction.image_urls.length} ภาพ)</h2>
+                                          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+                                            ${transaction.image_urls.map((url) => `<img src="${url}" style="width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);" />`).join("")}
+                                          </div>
+                                        </body>
+                                      </html>
+                                    `);
+                                  }
+                                }}
+                              >
+                                <span className="text-xs text-gray-600 font-semibold">
+                                  +{transaction.image_urls.length - 3}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-gray-400 text-sm">-</span>
                         )}
@@ -392,13 +424,13 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
       ? new Date(transaction.date).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0],
     category: transaction?.category || "",
-    image_url: transaction?.image_url || "",
+    image_urls: transaction?.image_urls || [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(
-    transaction?.image_url || null
+  const [imagePreviews, setImagePreviews] = useState<string[]>(
+    transaction?.image_urls || []
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -407,22 +439,15 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
     setError("");
 
     try {
-      // Prepare request data (only include image_url if it exists)
+      // Prepare request data
       const requestData: FinanceTransactionRequest = {
         type: formData.type,
         amount: formData.amount,
         description: formData.description,
         date: formData.date,
         category: formData.category,
+        image_urls: formData.image_urls && formData.image_urls.length > 0 ? formData.image_urls : undefined,
       };
-      
-      // Only include image_url if it has a value
-      if (formData.image_url) {
-        requestData.image_url = formData.image_url;
-      } else if (transaction && transaction.image_url && !formData.image_url) {
-        // If editing and removing image, send empty string
-        requestData.image_url = "";
-      }
 
       if (transaction) {
         await api.put(`/api/finance/transactions/${transaction.id}`, requestData);
@@ -441,25 +466,34 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("กรุณาเลือกไฟล์ภาพเท่านั้น");
+    // Check total images (including existing)
+    const totalImages = imagePreviews.length + files.length;
+    if (totalImages > 5) {
+      setError(`สามารถอัพโหลดได้สูงสุด 5 ภาพ (ปัจจุบันมี ${imagePreviews.length} ภาพ)`);
       return;
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError("ขนาดไฟล์ต้องไม่เกิน 10MB");
-      return;
+    // Validate all files
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith("image/")) {
+        setError("กรุณาเลือกไฟล์ภาพเท่านั้น");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setError("ขนาดไฟล์ต้องไม่เกิน 10MB");
+        return;
+      }
     }
 
     setUploadingImage(true);
     setError("");
 
-    try {
+    // Upload all files
+    const uploadPromises = Array.from(files).map(async (file) => {
       const formDataUpload = new FormData();
       formDataUpload.append("image", file);
 
@@ -473,10 +507,14 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
         }
       );
 
-      if (response.data.success && response.data.image_url) {
-        setFormData({ ...formData, image_url: response.data.image_url });
-        setImagePreview(response.data.image_url);
-      }
+      return response.data.image_url;
+    });
+
+    try {
+      const uploadedUrls = await Promise.all(uploadPromises);
+      const newImageUrls = [...(formData.image_urls || []), ...uploadedUrls];
+      setFormData({ ...formData, image_urls: newImageUrls });
+      setImagePreviews(newImageUrls);
     } catch (err) {
       const axiosError = err as AxiosError;
       setError(
@@ -485,12 +523,15 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
       );
     } finally {
       setUploadingImage(false);
+      // Reset file input
+      e.target.value = "";
     }
   };
 
-  const handleRemoveImage = () => {
-    setFormData({ ...formData, image_url: "" });
-    setImagePreview(null);
+  const handleRemoveImage = (index: number) => {
+    const newImageUrls = formData.image_urls?.filter((_, i) => i !== index) || [];
+    setFormData({ ...formData, image_urls: newImageUrls });
+    setImagePreviews(newImageUrls);
   };
 
   return (
@@ -595,39 +636,35 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
           {/* Image Upload */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              รูปภาพ (ถ้ามี)
+              รูปภาพ (สูงสุด 5 ภาพ) {imagePreviews.length > 0 && `(${imagePreviews.length}/5)`}
             </label>
-            {imagePreview ? (
-              <div className="space-y-2">
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => document.getElementById("image-upload")?.click()}
-                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                  disabled={uploadingImage}
-                >
-                  {uploadingImage ? "กำลังอัพโหลด..." : "เปลี่ยนรูปภาพ"}
-                </button>
+            {imagePreviews.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                {imagePreviews.map((url, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
-            ) : (
+            )}
+            {imagePreviews.length < 5 && (
               <div>
                 <input
                   id="image-upload"
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleImageUpload}
                   className="hidden"
                   disabled={uploadingImage}
@@ -664,7 +701,10 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
                         คลิกเพื่ออัพโหลดรูปภาพ
                       </span>
                       <span className="text-xs text-gray-500 mt-1">
-                        รองรับ JPEG, PNG, GIF, WebP (สูงสุด 10MB)
+                        รองรับ JPEG, PNG, GIF, WebP (สูงสุด 10MB ต่อภาพ)
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">
+                        สามารถเลือกหลายภาพได้ (สูงสุด 5 ภาพ)
                       </span>
                     </div>
                   )}
