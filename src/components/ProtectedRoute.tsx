@@ -5,7 +5,7 @@ import { User } from "../types";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ("registration" | "finance")[];
+  allowedRoles?: ("registration")[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {

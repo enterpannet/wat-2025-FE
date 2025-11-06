@@ -19,7 +19,7 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editFormData, setEditFormData] = useState({
     full_name: "",
-    roles: ["registration"] as ("registration" | "finance")[],
+    roles: ["registration"] as ("registration")[],
     is_active: true,
   });
 
@@ -119,7 +119,7 @@ const UserManagement: React.FC = () => {
       case "registration":
         return "ผู้ดูแลระบบลงทะเบียน";
       case "finance":
-        return "ผู้ดูแลรายรับ-รายจ่าย";
+        return "ผู้ดูแลรายรับ-รายจ่าย"; // Deprecated - display only
       default:
         return "ไม่ระบุ";
     }
@@ -130,7 +130,7 @@ const UserManagement: React.FC = () => {
       case "registration":
         return "bg-blue-100 text-blue-700";
       case "finance":
-        return "bg-green-100 text-green-700";
+        return "bg-gray-100 text-gray-700"; // Deprecated - gray out
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -242,21 +242,6 @@ const UserManagement: React.FC = () => {
                                 className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                               />
                               <span className="ml-2 text-sm text-gray-700">ระบบลงทะเบียน</span>
-                            </label>
-                            <label className="flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={editFormData.roles.includes("finance")}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setEditFormData({ ...editFormData, roles: [...editFormData.roles, "finance"] });
-                                  } else {
-                                    setEditFormData({ ...editFormData, roles: editFormData.roles.filter(r => r !== "finance") });
-                                  }
-                                }}
-                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                              />
-                              <span className="ml-2 text-sm text-gray-700">รายรับ-รายจ่าย</span>
                             </label>
                           </div>
                         ) : (

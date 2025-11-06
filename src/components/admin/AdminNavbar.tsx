@@ -34,7 +34,6 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
   };
 
   const hasRegistrationRole = !user?.roles || user.roles.includes("registration");
-  const hasFinanceRole = !user?.roles || user.roles.includes("finance");
 
   return (
     <nav className="bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 shadow-2xl">
@@ -149,73 +148,6 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                       <div className="flex items-center space-x-2">
                         <span>📋</span>
                         <span>บันทึกกิจกรรม</span>
-                      </div>
-                    </NavLink>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Finance Dropdown */}
-            {hasFinanceRole && (
-              <div className="relative group">
-                <button
-                  type="button"
-                  className="px-4 py-2.5 rounded-lg font-semibold text-white text-sm transition-all duration-200 hover:bg-purple-700 hover:shadow-md flex items-center space-x-1"
-                >
-                  <span>💰 รายรับ-รายจ่าย</span>
-                  <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-2 border-purple-200">
-                  <div className="py-2">
-                    <NavLink
-                      to="/admin/finance/transactions"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium transition-all duration-200 ${
-                          isActive
-                            ? "bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border-l-4 border-purple-600"
-                            : "text-gray-700 hover:bg-purple-50 hover:text-purple-600"
-                        }`
-                      }
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span>📊</span>
-                        <span>Dashboard รายรับ-รายจ่าย</span>
-                      </div>
-                    </NavLink>
-                    <NavLink
-                      to="/admin/finance/manage"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium transition-all duration-200 ${
-                          isActive
-                            ? "bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border-l-4 border-purple-600"
-                            : "text-gray-700 hover:bg-purple-50 hover:text-purple-600"
-                        }`
-                      }
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span>💵</span>
-                        <span>บันทึกรายรับ-รายจ่าย</span>
-                      </div>
-                    </NavLink>
-                    <NavLink
-                      to="/admin/finance/summary"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium transition-all duration-200 ${
-                          isActive
-                            ? "bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border-l-4 border-purple-600"
-                            : "text-gray-700 hover:bg-purple-50 hover:text-purple-600"
-                        }`
-                      }
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span>📈</span>
-                        <span>สรุปข้อมูล</span>
                       </div>
                     </NavLink>
                   </div>
@@ -338,54 +270,6 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                   }
                 >
                   📋 บันทึกกิจกรรม
-                </NavLink>
-              </div>
-            )}
-
-            {/* Mobile Finance Section */}
-            {hasFinanceRole && (
-              <div className="pt-2">
-                <div className="px-5 py-3 bg-white/10 rounded-xl backdrop-blur-sm mb-2">
-                  <p className="text-white text-sm font-bold tracking-wide">💰 รายรับ-รายจ่าย</p>
-                </div>
-                <NavLink
-                  to="/admin/finance/transactions"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `block px-8 py-3 rounded-xl transition-all duration-200 font-medium text-sm ${
-                      isActive
-                        ? "bg-white text-purple-700 shadow-lg"
-                        : "text-purple-100 bg-purple-800/30 hover:bg-purple-800/50 backdrop-blur-sm"
-                    }`
-                  }
-                >
-                  📊 Dashboard รายรับ-รายจ่าย
-                </NavLink>
-                <NavLink
-                  to="/admin/finance/manage"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `block px-8 py-3 rounded-xl transition-all duration-200 font-medium text-sm ${
-                      isActive
-                        ? "bg-white text-purple-700 shadow-lg"
-                        : "text-purple-100 bg-purple-800/30 hover:bg-purple-800/50 backdrop-blur-sm"
-                    }`
-                  }
-                >
-                  💵 บันทึกรายรับ-รายจ่าย
-                </NavLink>
-                <NavLink
-                  to="/admin/finance/summary"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `block px-8 py-3 rounded-xl transition-all duration-200 font-medium text-sm ${
-                      isActive
-                        ? "bg-white text-purple-700 shadow-lg"
-                        : "text-purple-100 bg-purple-800/30 hover:bg-purple-800/50 backdrop-blur-sm"
-                    }`
-                  }
-                >
-                  📈 สรุปข้อมูล
                 </NavLink>
               </div>
             )}

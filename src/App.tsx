@@ -5,10 +5,7 @@ import AdminLogin from "./components/admin/AdminLogin";
 import AdminRegister from "./components/admin/AdminRegister";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import RegistrationDashboard from "./components/admin/RegistrationDashboard";
-import FinanceDashboard from "./components/admin/FinanceDashboard";
 import ListTum from "./components/admin/ListTum";
-import IncomeExpense from "./components/admin/IncomeExpense";
-import Summary from "./components/admin/Summary";
 import ActivityLogPage from "./components/admin/ActivityLog";
 import DeviceLog from "./components/DeviceLog";
 import UserManagement from "./components/admin/UserManagement";
@@ -75,54 +72,12 @@ function App() {
           }
         />
 
-        {/* ส่วนรายรับ-รายจ่าย (Finance/Transaction Section) - Only for finance role */}
-        <Route
-          path="/admin/finance/transactions"
-          element={
-            <ProtectedRoute allowedRoles={["finance"]}>
-              <FinanceDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/finance/manage"
-          element={
-            <ProtectedRoute allowedRoles={["finance"]}>
-              <IncomeExpense />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/finance/summary"
-          element={
-            <ProtectedRoute allowedRoles={["finance"]}>
-              <Summary />
-            </ProtectedRoute>
-          }
-        />
-
         {/* Legacy routes - redirect for backward compatibility */}
         <Route
           path="/admin/listtum"
           element={
             <ProtectedRoute allowedRoles={["registration"]}>
               <ListTum />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/income-expense"
-          element={
-            <ProtectedRoute allowedRoles={["finance"]}>
-              <IncomeExpense />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/summary"
-          element={
-            <ProtectedRoute allowedRoles={["finance"]}>
-              <Summary />
             </ProtectedRoute>
           }
         />

@@ -7,7 +7,7 @@ interface RegisterFormData {
   password: string;
   confirmPassword: string;
   full_name: string;
-  roles: ("registration" | "finance")[];
+  roles: ("registration")[];
 }
 
 interface ErrorResponse {
@@ -182,21 +182,6 @@ const AdminRegister: React.FC = () => {
                     className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                   />
                   <span className="ml-3 text-gray-700">ผู้ดูแลระบบลงทะเบียน</span>
-                </label>
-                <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.roles.includes("finance")}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFormData({ ...formData, roles: [...formData.roles, "finance"] });
-                      } else {
-                        setFormData({ ...formData, roles: formData.roles.filter(r => r !== "finance") });
-                      }
-                    }}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <span className="ml-3 text-gray-700">ผู้ดูแลรายรับ-รายจ่าย</span>
                 </label>
               </div>
               <p className="text-xs text-gray-500 mt-2">
