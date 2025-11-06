@@ -51,7 +51,7 @@ const SystemSelection: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Registration System */}
           <div
-            onClick={() => navigate("/admin/dashboard")}
+            onClick={() => navigate("/admin/registration/list")}
             className="bg-white rounded-2xl shadow-xl p-8 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 border-transparent hover:border-purple-500"
           >
             <div className="flex flex-col items-center text-center">

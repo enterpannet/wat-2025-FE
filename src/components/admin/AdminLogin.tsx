@@ -1,6 +1,7 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api, { AxiosError } from "../../api";
+import { User } from "../../types";
 
 interface LoginFormData {
   username: string;
@@ -18,7 +19,25 @@ const AdminLogin: React.FC = () => {
     password: "",
   });
   const [loading, setLoading] = useState<boolean>(false);
+  const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async (): Promise<void> => {
+      try {
+        const response = await api.get<User>("/api/admin/me");
+        if (response.data) {
+          // User is already logged in, redirect to system selection
+          navigate("/admin/select", { replace: true });
+        }
+      } catch (err) {
+        // User is not logged in, show login form
+        setCheckingAuth(false);
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -40,8 +59,17 @@ const AdminLogin: React.FC = () => {
     }
   };
 
+  // Show loading while checking authentication
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-purple-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-br from-purple-50 via-white to-purple-50">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">

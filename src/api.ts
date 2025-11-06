@@ -46,8 +46,20 @@ api.interceptors.response.use(
   (error) => {
     // Handle 401 unauthorized
     if (error.response?.status === 401) {
-      // Only redirect if not already on login page
-      if (!window.location.pathname.includes("/admin/login")) {
+      // List of public routes that don't require authentication
+      const publicRoutes = [
+        "/",
+        "/registration",
+        "/device-log",
+        "/admin/login",
+        "/admin/register",
+      ];
+      
+      const currentPath = window.location.pathname;
+      const isPublicRoute = publicRoutes.some(route => currentPath === route || currentPath.startsWith(route + "/"));
+      
+      // Only redirect if not already on login page and not on public route
+      if (!isPublicRoute && !currentPath.includes("/admin/login")) {
         window.location.href = "/admin/login";
       }
     }

@@ -88,13 +88,7 @@ const LandingPage: React.FC = () => {
           {/* Additional Info */}
           <div className="mt-12 text-center">
             <p className="text-gray-500 text-sm">
-              มีปัญหาในการใช้งาน?{" "}
-              <a
-                href="/device-log"
-                className="text-purple-600 hover:text-purple-700 font-semibold underline"
-              >
-                ติดต่อเจ้าหน้าที่
-              </a>
+              มีปัญหาในการใช้งาน? กรุณาติดต่อเจ้าหน้าที่
             </p>
           </div>
         </div>

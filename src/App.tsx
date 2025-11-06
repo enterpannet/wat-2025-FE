@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LandingPage from "./components/LandingPage";
 import RegistrationForm from "./components/RegistrationForm";
 import AdminLogin from "./components/admin/AdminLogin";
 import AdminRegister from "./components/admin/AdminRegister";
@@ -18,7 +17,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes - ไม่ต้อง login */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<RegistrationForm />} />
         <Route path="/registration" element={<RegistrationForm />} />
         <Route path="/device-log" element={<DeviceLog />} />
 

@@ -42,12 +42,18 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
           {/* Logo Section */}
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0 flex items-center">
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+              <div 
+                onClick={() => navigate("/admin/select")}
+                className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform"
+              >
                 <span className="text-2xl">🏛️</span>
               </div>
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              <h1 
+                onClick={() => navigate("/admin/select")}
+                className="text-xl sm:text-2xl font-extrabold text-white tracking-tight cursor-pointer hover:text-purple-200 transition-colors"
+              >
                 ระบบจัดการข้อมูล
               </h1>
               {userName && (
@@ -60,33 +66,13 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-1">
-            {/* Dashboard */}
-            <NavLink
-              to="/admin/dashboard"
-              className={({ isActive }) =>
-                `px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
-                  isActive
-                    ? "bg-white text-purple-700 shadow-lg scale-105"
-                    : "text-white hover:bg-purple-700 hover:shadow-md"
-                }`
-              }
+            {/* Back to System Selection */}
+            <button
+              onClick={() => navigate("/admin/select")}
+              className="px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 text-white hover:bg-purple-700 hover:shadow-md"
             >
-              🏠 หน้าจัดการ
-            </NavLink>
-
-            {/* User Management */}
-            <NavLink
-              to="/admin/users"
-              className={({ isActive }) =>
-                `px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
-                  isActive
-                    ? "bg-white text-purple-700 shadow-lg scale-105"
-                    : "text-white hover:bg-purple-700 hover:shadow-md"
-                }`
-              }
-            >
-              👥 จัดการผู้ใช้
-            </NavLink>
+              🔄 เลือกระบบ
+            </button>
 
             {/* Registration Dropdown */}
             {hasRegistrationRole && (
@@ -114,8 +100,8 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                       }
                     >
                       <div className="flex items-center space-x-2">
-                        <span>📊</span>
-                        <span>Dashboard การลงทะเบียน</span>
+                        <span>📋</span>
+                        <span>ระบบลงทะเบียน</span>
                       </div>
                     </NavLink>
                     <NavLink
@@ -130,24 +116,8 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                       }
                     >
                       <div className="flex items-center space-x-2">
-                        <span>📝</span>
-                        <span>รายชื่อทั้งหมด</span>
-                      </div>
-                    </NavLink>
-                    <NavLink
-                      to="/admin/registration/activity-logs"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium transition-all duration-200 ${
-                          isActive
-                            ? "bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 border-l-4 border-purple-600"
-                            : "text-gray-700 hover:bg-purple-50 hover:text-purple-600"
-                        }`
-                      }
-                    >
-                      <div className="flex items-center space-x-2">
                         <span>📋</span>
-                        <span>บันทึกกิจกรรม</span>
+                        <span>ตรารางสวด</span>
                       </div>
                     </NavLink>
                   </div>
@@ -196,35 +166,16 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
               </div>
             )}
             
-            {/* Mobile Dashboard */}
-            <NavLink
-              to="/admin/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `block px-5 py-3.5 rounded-xl font-bold text-base transition-all duration-200 ${
-                  isActive
-                    ? "bg-white text-purple-700 shadow-xl"
-                    : "text-white bg-purple-700/20 hover:bg-purple-700/40 backdrop-blur-sm"
-                }`
-              }
+            {/* Back to System Selection */}
+            <button
+              onClick={() => {
+                navigate("/admin/select");
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full px-5 py-3.5 rounded-xl font-bold text-base transition-all duration-200 text-white bg-purple-700/20 hover:bg-purple-700/40 backdrop-blur-sm mb-2"
             >
-              🏠 หน้าจัดการ
-            </NavLink>
-
-            {/* Mobile User Management */}
-            <NavLink
-              to="/admin/users"
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `block px-5 py-3.5 rounded-xl font-bold text-base transition-all duration-200 ${
-                  isActive
-                    ? "bg-white text-purple-700 shadow-xl"
-                    : "text-white bg-purple-700/20 hover:bg-purple-700/40 backdrop-blur-sm"
-                }`
-              }
-            >
-              👥 จัดการผู้ใช้
-            </NavLink>
+              🔄 เลือกระบบ
+            </button>
 
             {/* Mobile Registration Section */}
             {hasRegistrationRole && (
@@ -243,7 +194,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                     }`
                   }
                 >
-                  📊 Dashboard การลงทะเบียน
+                  📋 ระบบลงทะเบียน
                 </NavLink>
                 <NavLink
                   to="/admin/registration/detail"
@@ -256,20 +207,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ userName }) => {
                     }`
                   }
                 >
-                  📝 รายชื่อทั้งหมด
-                </NavLink>
-                <NavLink
-                  to="/admin/registration/activity-logs"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `block px-8 py-3 rounded-xl transition-all duration-200 font-medium text-sm ${
-                      isActive
-                        ? "bg-white text-purple-700 shadow-lg"
-                        : "text-purple-100 bg-purple-800/30 hover:bg-purple-800/50 backdrop-blur-sm"
-                    }`
-                  }
-                >
-                  📋 บันทึกกิจกรรม
+                  📋 ตรารางสวด
                 </NavLink>
               </div>
             )}
