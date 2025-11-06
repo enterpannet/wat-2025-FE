@@ -10,6 +10,7 @@ import DeviceLog from "./components/DeviceLog";
 import UserManagement from "./components/admin/UserManagement";
 import SystemSelection from "./components/admin/SystemSelection";
 import FinanceDashboard from "./components/finance/FinanceDashboard";
+import FinanceTransactionForm from "./components/finance/FinanceTransactionForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -107,6 +108,22 @@ function App() {
           element={
             <ProtectedRoute>
               <FinanceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/new"
+          element={
+            <ProtectedRoute>
+              <FinanceTransactionForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/edit/:id"
+          element={
+            <ProtectedRoute>
+              <FinanceTransactionForm />
             </ProtectedRoute>
           }
         />
