@@ -191,41 +191,54 @@ const RegistrationDashboard: React.FC = () => {
   };
 
   const handleEdit = async (registration: Registration): Promise<void> => {
-    setEditingId(registration.id);
-    // Format birth_date to พ.ศ. (DD/MM/YYYY)
-    const birthDateBE = formatDateToBE(registration.birth_date);
-    
-    setEditFormData({
-      full_name: registration.full_name,
-      nickname: registration.nickname || "",
-      phone_number: registration.phone_number,
-      address_detail: registration.address_detail,
-      temple_name: registration.temple_name || "",
-      medical_condition: registration.medical_condition || "",
-      vassa: registration.vassa || 0,
-      birth_date: birthDateBE,
-      province_id: registration.province_id,
-      district_id: registration.district_id,
-      sub_district_id: registration.sub_district_id,
-    });
-    
-    // Set province search
-    const selectedProvince = provinces.find(p => p.id === registration.province_id);
-    if (selectedProvince) {
-      setProvinceSearch(selectedProvince.name_th);
-    } else {
-      setProvinceSearch("");
+    try {
+      setEditingId(registration.id);
+      // Format birth_date to พ.ศ. (DD/MM/YYYY)
+      const birthDateBE = formatDateToBE(registration.birth_date);
+      
+      setEditFormData({
+        full_name: registration.full_name,
+        nickname: registration.nickname || "",
+        phone_number: registration.phone_number,
+        address_detail: registration.address_detail,
+        temple_name: registration.temple_name || "",
+        medical_condition: registration.medical_condition || "",
+        vassa: registration.vassa || 0,
+        birth_date: birthDateBE,
+        province_id: registration.province_id,
+        district_id: registration.district_id,
+        sub_district_id: registration.sub_district_id,
+      });
+      
+      // Set province search
+      const selectedProvince = provinces.find(p => p.id === registration.province_id);
+      if (selectedProvince) {
+        setProvinceSearch(selectedProvince.name_th);
+      } else {
+        setProvinceSearch("");
+        // If province not found in list, try to fetch it
+        if (registration.province_id && provinces.length === 0) {
+          await fetchProvinces();
+          const provinceAfterFetch = provinces.find(p => p.id === registration.province_id);
+          if (provinceAfterFetch) {
+            setProvinceSearch(provinceAfterFetch.name_th);
+          }
+        }
+      }
+      
+      // Load districts and sub-districts if province/district is selected
+      if (registration.province_id) {
+        await fetchDistricts(registration.province_id.toString());
+      }
+      if (registration.district_id) {
+        await fetchSubDistricts(registration.district_id.toString());
+      }
+      
+      setShowEditModal(true);
+    } catch (err) {
+      console.error("Error opening edit modal:", err);
+      showAlert("ไม่สามารถเปิดฟอร์มแก้ไขได้", "error");
     }
-    
-    // Load districts and sub-districts if province/district is selected
-    if (registration.province_id) {
-      await fetchDistricts(registration.province_id.toString());
-    }
-    if (registration.district_id) {
-      await fetchSubDistricts(registration.district_id.toString());
-    }
-    
-    setShowEditModal(true);
   };
 
   const handleEditFormChange = async (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): Promise<void> => {
