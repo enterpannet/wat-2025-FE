@@ -44,7 +44,7 @@ const FinanceDashboard: React.FC = () => {
     } catch (err) {
       const axiosError = err as AxiosError;
       setError(
-        axiosError.response?.data?.error || "ไม่สามารถดึงข้อมูลได้"
+        (axiosError.response?.data as { error?: string })?.error || "ไม่สามารถดึงข้อมูลได้"
       );
     } finally {
       setLoading(false);
@@ -77,7 +77,7 @@ const FinanceDashboard: React.FC = () => {
       fetchSummary();
     } catch (err) {
       const axiosError = err as AxiosError;
-      alert(axiosError.response?.data?.error || "ไม่สามารถลบข้อมูลได้");
+      alert((axiosError.response?.data as { error?: string })?.error || "ไม่สามารถลบข้อมูลได้");
     }
   };
 
@@ -396,7 +396,7 @@ const FinanceTransactionForm: React.FC<FinanceTransactionFormProps> = ({
     } catch (err) {
       const axiosError = err as AxiosError;
       setError(
-        axiosError.response?.data?.error || "ไม่สามารถบันทึกข้อมูลได้"
+        (axiosError.response?.data as { error?: string })?.error || "ไม่สามารถบันทึกข้อมูลได้"
       );
     } finally {
       setLoading(false);
