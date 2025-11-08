@@ -8,6 +8,7 @@ import {
   RegistrationRequest,
 } from "../types";
 import PublicNavbar from "./PublicNavbar";
+import AlertModal from "./common/AlertModal";
 
 interface RegistrationFormProps {
   onSuccess?: () => void;
@@ -38,7 +39,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
   const [zipCode, setZipCode] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<boolean>(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
   const [provinceSearch, setProvinceSearch] = useState<string>("");
   const [showProvinceDropdown, setShowProvinceDropdown] = useState<boolean>(false);
 
@@ -193,7 +194,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
       };
 
       await api.post("/api/public/registrations", submitData);
-      setSuccess(true);
+      setIsSuccessModalOpen(true);
 
       setFormData({
         full_name: "",
@@ -211,12 +212,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
       setProvinceSearch("");
       setShowProvinceDropdown(false);
 
-      setTimeout(() => {
-        setSuccess(false);
-        if (onSuccess) {
-          onSuccess();
-        }
-      }, 2000);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
       setError(
@@ -224,6 +219,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSuccessModalClose = (): void => {
+    setIsSuccessModalOpen(false);
+    if (onSuccess) {
+      onSuccess();
     }
   };
 
@@ -242,12 +244,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
           <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
             แบบฟอร์มลงทะเบียน
           </h2>
-
-          {success && (
-            <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-              ลงทะเบียนสำเร็จ!
-            </div>
-          )}
 
           {error && (
             <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
@@ -536,8 +532,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
           </form>
         </div>
       </div>
-      </div>
-      </div>
+    </div>
+    <AlertModal
+      isOpen={isSuccessModalOpen}
+      onClose={handleSuccessModalClose}
+      title="สำเร็จ"
+      message="ลงทะเบียนเสร็จแล้ว"
+      type="success"
+      confirmText="ตกลง"
+    />
+  </div>
   );
 };
 
