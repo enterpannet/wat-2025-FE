@@ -12,13 +12,23 @@ import AlertModal from "./common/AlertModal";
 
 interface RegistrationFormProps {
   onSuccess?: () => void;
+  pageTitle?: string;
+  formTitle?: string;
+  successMessage?: string;
+  description?: string;
 }
 
 interface ErrorResponse {
   error: string;
 }
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({
+  onSuccess,
+  pageTitle = "ระบบลงทะเบียน",
+  formTitle = "แบบฟอร์มลงทะเบียน",
+  successMessage = "ลงทะเบียนเสร็จแล้ว",
+  description,
+}) => {
   const [formData, setFormData] = useState<RegistrationFormData>({
     full_name: "",
     nickname: "",
@@ -236,13 +246,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
       <div className="py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">ระบบลงทะเบียน</h1>
-           
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">{pageTitle}</h1>
+            {description && (
+              <p className="text-lg text-gray-600">{description}</p>
+            )}
           </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-            แบบฟอร์มลงทะเบียน
+            {formTitle}
           </h2>
 
           {error && (
@@ -537,7 +549,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess }) => {
       isOpen={isSuccessModalOpen}
       onClose={handleSuccessModalClose}
       title="สำเร็จ"
-      message="ลงทะเบียนเสร็จแล้ว"
+      message={successMessage}
       type="success"
       confirmText="ตกลง"
     />

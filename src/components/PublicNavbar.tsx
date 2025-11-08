@@ -46,6 +46,18 @@ const PublicNavbar: React.FC = () => {
             >
               ลงทะเบียน
             </NavLink>
+            <NavLink
+              to="/teacher-registration"
+              className={({ isActive }) =>
+                `px-4 py-2 rounded-lg font-semibold transition-all ${
+                  isActive
+                    ? "bg-purple-600 text-white shadow-lg"
+                    : "text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+                }`
+              }
+            >
+              ลงทะเบียนพระอาจารย์
+            </NavLink>
             <button
               onClick={() => navigate("/admin/login")}
               className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-md hover:shadow-lg"
@@ -104,6 +116,19 @@ const PublicNavbar: React.FC = () => {
               }
             >
               ลงทะเบียน
+            </NavLink>
+            <NavLink
+              to="/teacher-registration"
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `block px-4 py-3 rounded-lg font-semibold text-base transition-all ${
+                  isActive
+                    ? "bg-purple-600 text-white shadow-lg"
+                    : "text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+                }`
+              }
+            >
+              ลงทะเบียนพระอาจารย์
             </NavLink>
             <button
               onClick={() => {

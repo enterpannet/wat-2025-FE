@@ -12,6 +12,7 @@ import SystemSelection from "./components/admin/SystemSelection";
 import FinanceDashboard from "./components/finance/FinanceDashboard";
 import FinanceTransactionForm from "./components/finance/FinanceTransactionForm";
 import ProtectedRoute from "./components/ProtectedRoute";
+import TeacherRegistrationForm from "./components/TeacherRegistrationForm";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         {/* Public Routes - ไม่ต้อง login */}
         <Route path="/" element={<RegistrationForm />} />
         <Route path="/registration" element={<RegistrationForm />} />
+        <Route path="/teacher-registration" element={<TeacherRegistrationForm />} />
         <Route path="/device-log" element={<DeviceLog />} />
 
         {/* Admin Routes - Public */}
