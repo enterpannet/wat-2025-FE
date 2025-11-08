@@ -20,10 +20,13 @@ interface User {
 const RegistrationDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [teacherRegistrations, setTeacherRegistrations] = useState<Registration[]>([]);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
+  const [loadingState, setLoadingState] = useState<{ monk: boolean; teacher: boolean }>({ monk: true, teacher: true });
+  const [errorState, setErrorState] = useState<{ monk: string; teacher: string }>({ monk: "", teacher: "" });
+  const [activeTab, setActiveTab] = useState<"monk" | "teacher">("monk");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingType, setEditingType] = useState<"monk" | "teacher">("monk");
   const [editFormData, setEditFormData] = useState<Partial<Registration>>({});
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -54,6 +57,7 @@ const RegistrationDashboard: React.FC = () => {
   useEffect(() => {
     checkAuth();
     fetchRegistrations();
+    fetchTeacherRegistrations();
     fetchProvinces();
   }, []);
 
@@ -119,18 +123,37 @@ const RegistrationDashboard: React.FC = () => {
 
   const fetchRegistrations = async (): Promise<void> => {
     try {
-      setLoading(true);
+      setLoadingState((prev) => ({ ...prev, monk: true }));
       const response = await api.get<Registration[]>("/api/admin/registrations");
       setRegistrations(response.data);
+      setErrorState((prev) => ({ ...prev, monk: "" }));
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
       if (axiosError.response?.status === 401) {
         navigate("/admin/login");
       } else {
-        setError("ไม่สามารถโหลดข้อมูลได้");
+        setErrorState((prev) => ({ ...prev, monk: "ไม่สามารถโหลดข้อมูลได้" }));
       }
     } finally {
-      setLoading(false);
+      setLoadingState((prev) => ({ ...prev, monk: false }));
+    }
+  };
+
+  const fetchTeacherRegistrations = async (): Promise<void> => {
+    try {
+      setLoadingState((prev) => ({ ...prev, teacher: true }));
+      const response = await api.get<Registration[]>("/api/admin/teacher-registrations");
+      setTeacherRegistrations(response.data);
+      setErrorState((prev) => ({ ...prev, teacher: "" }));
+    } catch (err) {
+      const axiosError = err as AxiosError<ErrorResponse>;
+      if (axiosError.response?.status === 401) {
+        navigate("/admin/login");
+      } else {
+        setErrorState((prev) => ({ ...prev, teacher: "ไม่สามารถโหลดข้อมูลได้" }));
+      }
+    } finally {
+      setLoadingState((prev) => ({ ...prev, teacher: false }));
     }
   };
 
@@ -138,14 +161,19 @@ const RegistrationDashboard: React.FC = () => {
     setAlertModal({ isOpen: true, message, type });
   };
 
-  const handleDelete = (id: number, fullName: string): void => {
+  const handleDelete = (id: number, fullName: string, type: "monk" | "teacher"): void => {
     setConfirmModal({
       isOpen: true,
       message: `คุณต้องการลบข้อมูลของ ${fullName} ใช่หรือไม่?`,
       onConfirm: async () => {
         try {
-          await api.delete(`/api/admin/registrations/${id}`);
-          setRegistrations((prev) => prev.filter((reg) => reg.id !== id));
+          const basePath = type === "monk" ? "/api/admin/registrations" : "/api/admin/teacher-registrations";
+          await api.delete(`${basePath}/${id}`);
+          if (type === "monk") {
+            setRegistrations((prev) => prev.filter((reg) => reg.id !== id));
+          } else {
+            setTeacherRegistrations((prev) => prev.filter((reg) => reg.id !== id));
+          }
           showAlert("ลบข้อมูลสำเร็จ", "success");
         } catch (err) {
           const axiosError = err as AxiosError<ErrorResponse>;
@@ -204,9 +232,10 @@ const RegistrationDashboard: React.FC = () => {
     }
   };
 
-  const handleEdit = async (registration: Registration): Promise<void> => {
+  const handleEdit = async (registration: Registration, type: "monk" | "teacher"): Promise<void> => {
     try {
       setEditingId(registration.id);
+      setEditingType(type);
       // Format birth_date to พ.ศ. (DD/MM/YYYY)
       const birthDateBE = formatDateToBE(registration.birth_date);
       
@@ -359,8 +388,13 @@ const RegistrationDashboard: React.FC = () => {
       console.log("District ID:", updateData.district_id, typeof updateData.district_id);
       console.log("Sub District ID:", updateData.sub_district_id, typeof updateData.sub_district_id);
 
-      await api.put(`/api/admin/registrations/${editingId}`, updateData);
-      await fetchRegistrations();
+      const basePath = editingType === "monk" ? "/api/admin/registrations" : "/api/admin/teacher-registrations";
+      await api.put(`${basePath}/${editingId}`, updateData);
+      if (editingType === "monk") {
+        await fetchRegistrations();
+      } else {
+        await fetchTeacherRegistrations();
+      }
       handleCancelEdit();
       showAlert("บันทึกข้อมูลสำเร็จ", "success");
     } catch (err) {
@@ -373,6 +407,7 @@ const RegistrationDashboard: React.FC = () => {
 
   const handleCancelEdit = (): void => {
     setEditingId(null);
+    setEditingType(activeTab);
     setEditFormData({});
     setShowEditModal(false);
     setProvinceSearch("");
@@ -390,13 +425,23 @@ const RegistrationDashboard: React.FC = () => {
     });
   };
 
-  if (loading) {
+  if (loadingState.monk && loadingState.teacher) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600"></div>
       </div>
     );
   }
+
+  const currentRegistrations = activeTab === "monk" ? registrations : teacherRegistrations;
+  const currentLoading = activeTab === "monk" ? loadingState.monk : loadingState.teacher;
+  const currentError = activeTab === "monk" ? errorState.monk : errorState.teacher;
+  const headerTitle =
+    activeTab === "monk" ? "จัดการข้อมูลผู้ลงทะเบียนพระปริวาส" : "จัดการข้อมูลผู้ลงทะเบียนพระอาจารย์";
+  const headerSubtitle =
+    activeTab === "monk"
+      ? `จัดการข้อมูลผู้ลงทะเบียนทั้งหมด (${registrations.length} รายการ)`
+      : `จัดการข้อมูลพระอาจารย์ทั้งหมด (${teacherRegistrations.length} รายการ)`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
@@ -405,21 +450,59 @@ const RegistrationDashboard: React.FC = () => {
       <div className="py-8 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8 flex justify-between items-center">
+          <div className="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                จัดการข้อมูลผู้ลงทะเบียนพระปริวาส
+                {headerTitle}
               </h1>
               <p className="text-lg text-gray-600">
-                จัดการข้อมูลผู้ลงทะเบียนทั้งหมด ({registrations.length} รายการ)
+                {headerSubtitle}
               </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  onClick={() => {
+                    setActiveTab("monk");
+                    if (!editingId) {
+                      setEditingType("monk");
+                    }
+                  }}
+                  className={`px-5 py-2 rounded-lg font-semibold transition-all ${
+                    activeTab === "monk"
+                      ? "bg-purple-600 text-white shadow-lg"
+                      : "bg-white text-purple-600 border border-purple-200 hover:bg-purple-50"
+                  }`}
+                >
+                  พระปริวาส ({registrations.length})
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("teacher");
+                    if (!editingId) {
+                      setEditingType("teacher");
+                    }
+                  }}
+                  className={`px-5 py-2 rounded-lg font-semibold transition-all ${
+                    activeTab === "teacher"
+                      ? "bg-purple-600 text-white shadow-lg"
+                      : "bg-white text-purple-600 border border-purple-200 hover:bg-purple-50"
+                  }`}
+                >
+                  พระอาจารย์ ({teacherRegistrations.length})
+                </button>
+              </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => navigate("/")}
                 className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:shadow-xl"
               >
                 🏠 ลงทะเบียนพระปริวาส
+              </button>
+              <button
+                onClick={() => navigate("/teacher-registration")}
+                className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all font-semibold shadow-lg hover:shadow-xl"
+              >
+                🏫 ลงทะเบียนพระอาจารย์
               </button>
               <button
                 onClick={() => navigate("/admin/registration/detail")}
@@ -430,14 +513,21 @@ const RegistrationDashboard: React.FC = () => {
             </div>
           </div>
 
-          {error && (
+          {currentError && (
             <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-              {error}
+              {currentError}
             </div>
           )}
 
           {/* Registrations Table */}
-          {registrations.length === 0 ? (
+          {currentLoading ? (
+            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-purple-600"></div>
+                <p className="text-lg text-gray-500">กำลังโหลดข้อมูล...</p>
+              </div>
+            </div>
+          ) : currentRegistrations.length === 0 ? (
             <div className="bg-white rounded-xl shadow-lg p-12 text-center">
               <p className="text-xl text-gray-500">ยังไม่มีข้อมูลการลงทะเบียน</p>
             </div>
@@ -477,7 +567,7 @@ const RegistrationDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {registrations.map((registration, index) => (
+                    {currentRegistrations.map((registration, index) => (
                       <tr
                         key={registration.id}
                         className="hover:bg-purple-50 transition-colors"
@@ -520,14 +610,14 @@ const RegistrationDashboard: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex gap-2 justify-center">
                             <button
-                              onClick={() => handleEdit(registration)}
+                              onClick={() => handleEdit(registration, activeTab)}
                               className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
                             >
                               ✏️ แก้ไข
                             </button>
                             <button
                               onClick={() =>
-                                handleDelete(registration.id, registration.full_name)
+                                handleDelete(registration.id, registration.full_name, activeTab)
                               }
                               className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
                             >

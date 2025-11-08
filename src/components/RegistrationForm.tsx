@@ -16,6 +16,7 @@ interface RegistrationFormProps {
   formTitle?: string;
   successMessage?: string;
   description?: string;
+  submitPath?: string;
 }
 
 interface ErrorResponse {
@@ -28,6 +29,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   formTitle = "แบบฟอร์มลงทะเบียน",
   successMessage = "ลงทะเบียนเสร็จแล้ว",
   description,
+  submitPath = "/api/public/registrations",
 }) => {
   const [formData, setFormData] = useState<RegistrationFormData>({
     full_name: "",
@@ -203,7 +205,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         vassa: formData.vassa ? parseInt(formData.vassa) : 0,
       };
 
-      await api.post("/api/public/registrations", submitData);
+      await api.post(submitPath, submitData);
       setIsSuccessModalOpen(true);
 
       setFormData({

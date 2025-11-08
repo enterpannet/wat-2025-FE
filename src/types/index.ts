@@ -74,6 +74,10 @@ export interface RegistrationRequest {
   vassa: number;
 }
 
+export interface TeacherRegistration extends Registration {}
+
+export interface TeacherRegistrationRequest extends RegistrationRequest {}
+
 export interface User {
   id: number;
   username: string;
